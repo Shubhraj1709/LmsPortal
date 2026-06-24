@@ -1,0 +1,376 @@
+get all courses 
+
+GET  http://localhost:8080/api/auth/courses
+
+--------------------------------------------------
+
+get all categories 
+
+GET http://localhost:8080/api/auth/categories
+
+--------------------------------------------------
+
+get all users 
+
+GET  http://localhost:8080/api/admin/users
+
+--------------------------------------------------
+
+create category 
+
+POST http://localhost:8080/api/admin/categories
+
+{
+  "name": "React Developer",
+  "description": "All React related courses"
+}
+
+
+--------------------------------------------------
+
+Update category 
+
+PUT http://localhost:8080/api/admin/categories/1
+
+{
+  "name": "Programming Updated",
+  "description": "Updated description"
+}
+
+
+--------------------------------------------------
+
+Create Course
+
+POST http://localhost:8080/api/admin/courses
+
+{
+  "title": "Java Fullstack",
+  "description": "Complete Java Backend + node",
+  "categoryId": 2,
+  "price": 3999,
+  "level": "BEGINNER"
+}
+
+
+--------------------------------------------------
+
+Update Course 
+
+PUT http://localhost:8080/api/admin/courses/1
+
+
+{
+  "title": "Java Fullstack Advanced",
+  "description": "Updated content",
+  "price": 3499
+}
+
+
+
+--------------------------------------------------
+delete course 
+
+DELETE http://localhost:8080/api/admin/courses/2
+
+--------------------------------------------------
+Update user role 
+
+PUT  http://localhost:8080/api/admin/users/2/role
+
+{
+  "role": "INSTRUCTOR"
+}
+
+
+--------------------------------------------------
+Delete user 
+
+DELETE http://localhost:8080/api/admin/users/1
+
+
+--------------------------------------------------
+
+get enrollment report 
+
+GET http://localhost:8080/api/admin/reports/enrollments
+
+
+--------------------------------------------------
+
+send notification to all users 
+
+POST  http://localhost:8080/api/admin/notifications
+
+{
+  "title": "Server Maintenance",
+  "message": "LMS will be offline tonight from 12 AM to 1 AM",
+  "sendTo": "ALL"
+}
+
+
+--------------------------------------------------
+
+send notification to specific users 
+
+POST  http://localhost:8080/api/admin/role
+
+{
+  "title": "Server Maintenance",
+  "message": "LMS will be online tonight from 12 AM to 1 AM",
+  "role": "STUDENT"
+}
+
+
+--------------------------------------------------
+
+get all notifications 
+
+GET  http://localhost:8080/api/admin/notifications
+
+
+--------------------------------------------------
+
+create module 
+
+POST  http://localhost:8080/api/instructor/course/2/module
+
+{
+  "title": "Introduction to JDK",
+  "description": "Basics, JVM, JDK, Syntax"
+}
+
+--------------------------------------------------
+
+get module 
+
+GET   http://localhost:8080/api/instructor/course/1/modules
+
+
+--------------------------------------------------
+
+create lessons 
+
+POST  http://localhost:8080/api/instructor/module/2/lesson
+
+{
+  "title": "Java Basics",
+  "content": "Variables, Data Types, Operators"
+}
+
+
+--------------------------------------------------
+
+GET lessons 
+
+GET http://localhost:8080/api/instructor/module/2/lessons
+
+
+
+--------------------------------------------------
+
+Add video 
+
+POST   http://localhost:8080/api/instructor/lesson/3/video
+
+{
+  "title": "JVM Internal Working",
+  "videoUrl": "https://example.com/jdk-video.mp4",
+  "duration": 540
+}
+
+--------------------------------------------------
+
+Get video by lessons
+
+GET  http://localhost:8080/api/instructor/lesson/1/video
+
+
+--------------------------------------------------
+
+GET all video 
+
+GET  http://localhost:8080/api/auth/videos
+
+
+--------------------------------------------------
+
+Add quiz 
+
+POST  http://localhost:8080/api/instructor/lesson/12/quiz
+
+{
+  "question": "What is Datatype?",
+  "optionA": "create variable",
+  "optionB": "memory",
+  "optionC": "jvm",
+  "optionD": "None of the above",
+  "correctAnswer": "A"
+}
+
+
+--------------------------------------------------
+
+Add Assignment
+
+POST  http://localhost:8080/api/instructor/lesson/9/assignment
+
+{
+  "title": "Backend Assignment",
+  "description": "Submit a PDF explaining Backend Concepts",
+  "dueDate": "2026-01-12"
+}
+
+
+--------------------------------------------------
+
+Get assignment by lessons
+
+GET  http://localhost:8080/api/instructor/lesson/9/assignments
+
+
+--------------------------------------------------
+
+Get assignment by course id 
+
+GET http://localhost:8080/api/instructor/course/1/assignments
+
+
+--------------------------------------------------
+
+Publish course
+
+PUT  http://localhost:8080/api/instructor/course/1/publish 
+
+
+--------------------------------------------------
+
+Get enrolled students 
+
+GET  http://localhost:8080/api/instructor/course/8/students
+
+--------------------------------------------------
+
+Enrolled students 
+
+POST  http://localhost:8080/api/instructor/course/1/enroll
+
+{
+    "amountPaid": 599.0,
+    "progressPercentage": 0,
+    "student": {
+        "id": 4
+    }
+}
+
+--------------------------------------------------
+
+Discussion thread 
+
+POST  http://localhost:8080/api/instructor/discussion/create
+
+{
+    "question": "What is difference between JVM and JRE?",
+    "course": { "id": 1 },
+    "student": { "id": 5 }
+}
+
+
+
+--------------------------------------------------
+
+Discussion student 
+
+POST  http://localhost:8080/api/student/course/1/discussion?studentId=5
+
+{
+    "question": "What is difference between JVM and JRE?"
+    // "course": { "id": 1 },
+    // "student": { "id": 5 }
+}
+
+--------------------------------------------------
+
+Get Discussion 
+
+GET http://localhost:8080/api/instructor/course/1/discussions
+
+
+--------------------------------------------------
+
+Replay discussion
+
+POST  http://localhost:8080/api/instructor/discussion/2/reply
+
+{
+  "message": "Great question! Let me explain..."
+}
+
+
+--------------------------------------------------
+
+Assignment submit student 
+
+POST  http://localhost:8080/api/student/assignment/submit
+
+File , assignemnt id 
+
+
+
+--------------------------------------------------
+
+Grade assignment submission 
+
+PUT  http://localhost:8080/api/instructor/submission/1/grade?grade=95
+
+
+--------------------------------------------------
+
+Get quiz 
+
+GET  http://localhost:8080/api/instructor/lesson/1/quiz
+
+
+--------------------------------------------------
+
+Take quiz 
+
+POST  http://localhost:8080/api/instructor/quiz/submit
+
+{
+  "studentId": 4,
+  "lessonId": 1,
+  "answers": {
+    "1": "A",
+    "2": "A",
+    "7": "B"
+  }
+}
+
+
+--------------------------------------------------
+
+Get all students
+
+GET  http://localhost:8080/api/instructor/students 
+
+--------------------------------------------------
+
+get all students reply message 
+
+GET   http://localhost:8080/api/instructor/discussions
+
+--------------------------------------------------
+
+
+
+
+--------------------------------------------------
+
+
+
+
+--------------------------------------------------
+
+
+--------------------------------------------------

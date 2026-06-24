@@ -1,0 +1,304 @@
+
+Admin == GET Notification
+
+
+=============================================
+
+Instructor  == GET  Enroll student  ,  GET Notification , Post Notification(sending)
+
+=============================================
+
+Student
+
+GET discussion ==  textbox(question), select course(dropdowndown list course)
+for student discussion == http://localhost:8080/api/student/course/1/discussion?studentId=5
+
+student == submit assignment 
+http://localhost:8080/api/student/assignment/submit
+{
+	file , student id , assign,ment
+}
+
+courses
+categories 
+notification
+enrollments
+quizes
+lessons
+video
+discussion
+
+=================================================================
+=================================================================
+=================================================================
+=================================================================
+=================================================================
+
+=================================================================
+=================================================================
+
+Create Module
+
+POST  http://localhost:8080/api/instructor/course/2/module
+
+{
+  "title": "Introduction to JDK",
+  "description": "Basics, JVM, JDK, Syntax"
+}
+
+
+=================================================================
+GET Module
+
+http://localhost:8080/api/instructor/course/1/modules
+
+=================================================================
+
+Create Lessons
+
+POST  http://localhost:8080/api/instructor/module/2/lesson
+
+{
+  "title": "Java Basics",
+  "content": "Variables, Data Types, Operators"
+}
+
+
+=================================================================
+
+GET Lessons
+
+GET  http://localhost:8080/api/instructor/module/2/lessons
+
+=================================================================
+
+Add Video
+
+POST http://localhost:8080/api/instructor/lesson/6/video
+
+{
+  "title": "JVM Internal Working",
+  "videoUrl": "https://example.com/jdk-video.mp4",
+  "duration": 540
+}
+
+=================================================================
+
+GET Video
+
+GET  http://localhost:8080/api/instructor/lesson/1/videos
+
+=================================================================
+
+GET All Videos for every one 
+
+GET  http://localhost:8080/api/auth/videos
+
+
+=================================================================
+
+Add Quiz
+
+POST  http://localhost:8080/api/instructor/lesson/1/quiz
+
+{
+  "question": "What is JVM?",
+  "optionA": "Java Virtual Machine",
+  "optionB": "Java Volume Manager",
+  "optionC": "Joint Virtual Manager",
+  "optionD": "Java Vendor Machine",
+  "correctAnswer": "A"
+}
+
+
+=================================================================
+
+Take Quiz 
+
+POST http://localhost:8080/api/instructor/quiz/submit
+
+{
+  "studentId": 9,
+  "lessonId": 1,
+  "answers": {
+    "1": "A",
+    "6": "C",
+    "7": "B"
+  }
+}
+--------------------------
+1,6,7,= quiz number
+A,B,C = Answer
+
+=================================================================
+
+GET Quiz
+
+GET  http://localhost:8080/api/instructor/lesson/1/quiz
+
+
+=================================================================
+
+Discussion for Instructor and Admin
+
+POST  http://localhost:8080/api/instructor/discussion/create
+
+{
+    "question": "What is difference between JVM and JRE?",
+    "course": { "id": 1 },
+    "student": { "id": 5 }
+}
+
+
+=================================================================
+
+Discussion for Student
+
+POST http://localhost:8080/api/student/course/1/discussion?studentId=5
+
+{
+    "question": "What is difference between JVM and JRE?"
+    
+}
+
+
+
+=================================================================
+
+GET Discussion Everyone
+
+http://localhost:8080/api/instructor/course/1/discussions
+
+=================================================================
+
+REplay to discussion
+
+POST http://localhost:8080/api/instructor/discussion/2/reply
+
+{
+  "message": "Great question! Let me explain..."
+}
+
+
+
+=================================================================
+
+Get All Notification for admin , instructor 
+
+GET  http://localhost:8080/api/admin/notifications
+
+=================================================================
+
+Get Notification for Student 
+
+GET  http://localhost:8080/api/admin/notifications/STUDENT
+
+=================================================================
+
+Send Notification To All
+
+POST  http://localhost:8080/api/admin/notifications
+
+{
+  "title": "Server Maintenance",
+  "message": "LMS will be offline tonight from 12 AM to 1 AM",
+  "sendTo": "ALL"
+}
+
+
+=================================================================
+
+Send Notification to Specific User
+
+POST  http://localhost:8080/api/admin/role
+
+{
+  "title": "Server Maintenance",
+  "message": "LMS will be online tonight from 12 AM to 1 AM",
+  "role": "STUDENT"
+}
+
+=================================================================
+
+Create Categories
+
+POST  http://localhost:8080/api/admin/categories
+
+{
+  "name": "React Developer",
+  "description": "All React related courses"
+}
+
+=================================================================
+
+Get All Categories
+
+GET  http://localhost:8080/api/auth/categories
+
+
+=================================================================
+
+Update Categories By ID 
+
+PUT http://localhost:8080/api/admin/categories/1
+
+{
+  "name": "Programming Updated",
+  "description": "Updated description"
+}
+
+
+=================================================================
+
+DELETE Categories 
+
+DELETE  http://localhost:8080/api/admin/categories/1
+
+=================================================================
+
+Create Course 
+
+POST  http://localhost:8080/api/admin/courses
+
+{
+  "title": "Java Fullstack",
+  "description": "Complete Java Backend + node",
+  "categoryId": 2,
+  "price": 3999,
+  "level": "BEGINNER"
+}
+
+=================================================================
+
+GET All Courses
+
+GET  http://localhost:8080/api/auth/courses
+
+=================================================================
+
+GET Course By ID
+
+GET  http://localhost:8080/api/admin/courses/1
+
+=================================================================
+
+Update  Course 
+
+PUT  http://localhost:8080/api/admin/courses/1
+
+{
+  "title": "Java Fullstack Advanced",
+  "description": "Updated content",
+  "price": 3499
+}
+
+
+=================================================================
+
+DELETE  Course 
+
+DELETE http://localhost:8080/api/admin/courses/2
+
+=================================================================
+
+

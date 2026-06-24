@@ -1,0 +1,537 @@
+CREATE DATABASE /*!32312 IF NOT EXISTS*/`lms_portal` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+
+USE `lms_portal`;
+
+
+CREATE TABLE `users` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` enum('ADMIN','INSTRUCTOR','STUDENT') DEFAULT NULL,
+  `active` tinyint(1) NOT NULL,
+  `approved` tinyint(1) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK6dotkott2kjsp8vw4d0m25fb7` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `users` */
+
+insert  into `users`(`id`,`email`,`name`,`password`,`role`,`active`,`approved`) values 
+(2,'rahul@instructor.com','Rahul Instructor','$2a$10$0Tohv7zVT3ZzBdRv7H5sI.V/nvzKde80LJv.AxPJ3Cg2L02NzaynW','INSTRUCTOR',0,1),
+(3,'admin@lms.com','Admin User','$2a$10$D.y8xpX5hgaKGOeT2jGH1.jsPJaA2KHuDgaQeTXFA3ZCHpW/X8ph2','ADMIN',0,0),
+(4,'shubh@student.com','Shubh Verma','$2a$10$0FVslY2HOc98IU5rZ0ORiOtiOxoHfP13rqTepF9Jg2qwKAiB0jvQa','STUDENT',0,0),
+(5,'shubhraj@student.com','Shubhraj','$2a$10$nk/WEHw4Te.PIeddNfgK0.cW4hU7W72p/FObVpDvZSl.1V2itzenm','STUDENT',0,0),
+(6,'shubhraj4@student.com','shubhraj4','$2a$10$r/MNwqHLFFLtyHY2F.TIpukRsOoyffnjuNhn9dvI8LONDXiMbghWW','STUDENT',0,0),
+(7,'shubhraj5@example.com','shubhraj5','$2a$10$FwR11JAZSexsvVa/lZS86uKVPXphH4jC.IDsXTawSQtKbyu8SnFs.','INSTRUCTOR',0,0),
+(8,'shubhraj6@example.com','shubhraj6','$2a$10$VFH.Cu3sanrWqBlEva.1O.InzBrLquWn0.0HKF1iIfnDIV1OfXCKy','ADMIN',0,0),
+(9,'shubhraj7@gmail.com','shubhraj7','$2a$10$P2UY.mCw.9S/DVULZprshe4wuN0NyCNu3QvjqOTHhqjghv5EZFmt2','STUDENT',0,0),
+(10,'shubhraj7@example.com','shubhraj7','$2a$10$VQ080G.Ak5mJugYvcuNb8OQqheZ1KfBN/gavBh6YKjZ.JwCXaYQ4q','STUDENT',0,0),
+(11,'shubhraj8@gmail.com','Shubh8','$2a$10$bgB/toBsg5goyIKmIYW0ze12tt.M9pj35RSxSLcC63o6PsYF6TKMu','ADMIN',1,0),
+(12,'admin1@gmail.com','Admin1','$2a$10$AkaIfRkObwzXvsvo2u9Ks.noA2B1KWTRYMgFSCQFfmc/AS7ye3I6m','ADMIN',1,0),
+(13,'Admin2@gmail.com','Admin2','$2a$10$kiTEgdXlKwZGN.p7BNy/B.E6IhwCRw3AcGBHjFRhf3VvY8vDx/2Nu','ADMIN',1,0),
+(14,'Instructor2@gmail.com','Instructor2','$2a$10$/kiaWXDvDhkcMAqIYieYk.wWOesy7p0pnxN8XPyOBPrQ3/IHKdqjm','INSTRUCTOR',1,0),
+(15,'admin3@gmail.com','Admin3','$2a$10$84WwOiVkHpS5F3yI8e272.d8x8NNmbmcCuD47RGtoNd74bJbjKoZy','ADMIN',1,0),
+(16,'Student6@gmail.com','Student6','$2a$10$udxqS00P7xBKZulwAAj/7eLfukihxE.loT17KydMOlz3JEwzqV3..','STUDENT',1,0),
+(17,'shubhraj2@student.com','Shubhraj2','$2a$10$MvxmBMUFuCVp2a8UCy0/R.gXl3DkW/UoEIT3yNiWDqWMZQik8vG1y','STUDENT',1,0),
+(18,'shubhraj17@gmailcom','Shubhraj17','$2a$10$OhRpzlOYwVUvk9PwFN7o/uR1gmxBFhufIULYmfp2991qAI1Wia8oO','STUDENT',1,0);
+
+
+/*===========================================================*/
+
+CREATE TABLE `course_categories` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `description` varchar(255) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UKnxksnnnkvgo1vca6ffhyfrpux` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `course_categories` */
+
+insert  into `course_categories`(`id`,`description`,`name`) values 
+(1,'Updated description','Programming Updated'),
+(2,'All AI related courses','Artificial Intelligence'),
+(3,'All React related courses','React Developer'),
+(4,'Used for Testing','Testing');
+
+
+/*=================================================================*/
+
+
+CREATE TABLE `notifications` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `created_at` datetime(6) DEFAULT NULL,
+  `message` varchar(2000) DEFAULT NULL,
+  `target_role` varchar(255) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `send_to` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `notifications` */
+
+insert  into `notifications`(`id`,`created_at`,`message`,`target_role`,`title`,`send_to`) values 
+(1,'2025-11-26 12:49:36.212097','LMS will be offline tonight from 12 AM to 1 AM',NULL,'Server Maintenance','ALL'),
+(2,'2025-11-26 12:52:00.044654','LMS will be offline tonight from 12 AM to 1 AM',NULL,'Server Maintenance','ALL'),
+(3,'2025-11-27 04:08:58.690213','LMS will be offline tonight from 12 AM to 1 AM',NULL,'Server Maintenance','ALL'),
+(4,'2025-11-27 04:41:36.340200','LMS will be offline tonight from 12 AM to 1 AM',NULL,'Server Maintenance',NULL),
+(5,'2025-11-27 04:42:52.244174','LMS will be offline tonight from 12 AM to 1 AM',NULL,'Server Maintenance',NULL),
+(6,'2025-11-27 04:44:17.065630','LMS will be online tonight from 12 AM to 1 AM',NULL,'Server Maintenance','STUDENT'),
+(7,'2025-11-27 04:45:25.245630','LMS will be offline tonight from 12 AM to 1 AM',NULL,'Server Maintenance',NULL),
+(8,'2025-11-27 04:45:42.661996','LMS will be offline tonight from 12 AM to 1 AM',NULL,'Server Maintenance','ALL'),
+(9,'2025-12-09 11:18:00.746729','weekend holiday',NULL,'Holiday',NULL),
+(10,'2025-12-15 08:58:39.596367','hello',NULL,'good afternoon','STUDENT');
+
+
+/*===================================================================*/
+
+
+CREATE TABLE `settings` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `setting_key` varchar(255) DEFAULT NULL,
+  `setting_value` varchar(2000) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+/*====================================================================*/
+
+
+CREATE TABLE `courses` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `description` varchar(2000) DEFAULT NULL,
+  `instructor_id` bigint DEFAULT NULL,
+  `level` enum('ADVANCED','BEGINNER','INTERMEDIATE') NOT NULL DEFAULT 'BEGINNER',
+  `price` double DEFAULT NULL,
+  `published` tinyint(1) NOT NULL DEFAULT '0',
+  `title` varchar(255) DEFAULT NULL,
+  `category_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKlrqjut8xtbtgs6h7uosddyut7` (`category_id`),
+  CONSTRAINT `FKlrqjut8xtbtgs6h7uosddyut7` FOREIGN KEY (`category_id`) REFERENCES `course_categories` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `courses` */
+
+insert  into `courses`(`id`,`description`,`instructor_id`,`level`,`price`,`published`,`title`,`category_id`) values 
+(1,'Updated content',NULL,'INTERMEDIATE',3599,1,'Java Fullstack Advanced',1),
+(3,'Complete Java Backend + node',NULL,'INTERMEDIATE',3000,0,'Java Stack',2),
+(6,'j2ee',NULL,'INTERMEDIATE',12222,0,'j2ee',1);
+
+
+/*=======================================*/
+
+
+CREATE TABLE `discussion` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `question` varchar(255) DEFAULT NULL,
+  `course_id` bigint DEFAULT NULL,
+  `student_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKqw6oyllv86nlaonnwy6b5hos3` (`course_id`),
+  KEY `FK4l2updie132u6i1b6npfah6d7` (`student_id`),
+  CONSTRAINT `FK4l2updie132u6i1b6npfah6d7` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `FKqw6oyllv86nlaonnwy6b5hos3` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `discussion` */
+
+insert  into `discussion`(`id`,`question`,`course_id`,`student_id`) values 
+(1,'What is difference between JVM and JRE?',1,5),
+(2,'java defination',1,16),
+(3,'What is difference between JVM and JRE?',1,7),
+(4,'What is difference between JVM and JRE?',1,5);
+
+
+/* =========================================================== */
+
+
+CREATE TABLE `course_module` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `description` varchar(255) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `course_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKoxnv7ml9seonn275kmgq5sxy4` (`course_id`),
+  CONSTRAINT `FKoxnv7ml9seonn275kmgq5sxy4` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `course_module` */
+
+insert  into `course_module`(`id`,`description`,`title`,`course_id`) values 
+(1,'Basics, JVM, JDK, Syntax','Introduction to Java',1),
+(2,'Frontend','React',1),
+(5,'Basics, JVM, JDK, Syntax','Introduction to JDK',3),
+(7,'Basics, j2ee, java, Syntax','Introduction to j2ee',6);
+ 
+
+/* ===================================== */
+
+
+CREATE TABLE `enrollments` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `amount_paid` double DEFAULT NULL,
+  `course_id` bigint DEFAULT NULL,
+  `enrolled_at` datetime(6) DEFAULT NULL,
+  `student_id` bigint DEFAULT NULL,
+  `progress_percentage` double DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK2lha5vwilci2yi3vu5akusx4a` (`student_id`),
+  KEY `FKho8mcicp4196ebpltdn9wl6co` (`course_id`),
+  CONSTRAINT `FK2lha5vwilci2yi3vu5akusx4a` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `FKho8mcicp4196ebpltdn9wl6co` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `enrollments` */
+
+insert  into `enrollments`(`id`,`amount_paid`,`course_id`,`enrolled_at`,`student_id`,`progress_percentage`) values 
+(1,599,1,'2025-12-01 11:59:42.654370',4,0),
+(3,1,1,'2025-12-10 05:51:43.137708',16,100),
+(4,12,3,'2025-12-15 09:43:37.386621',4,11);
+
+
+/*  =================================================================== */
+
+
+CREATE TABLE `certificate` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `certificate_code` varchar(255) NOT NULL,
+  `issue_date` datetime(6) DEFAULT NULL,
+  `status` enum('ISSUED','REVOKED') DEFAULT NULL,
+  `course_id` bigint NOT NULL,
+  `student_id` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UKi0j02j91y0g2ygon6xvpqaeyl` (`certificate_code`),
+  KEY `FK13t46rtyipt6ayvme7crsdvs4` (`course_id`),
+  KEY `FKbuiuwkgfo5yed0yvv1ec24gv0` (`student_id`),
+  CONSTRAINT `FK13t46rtyipt6ayvme7crsdvs4` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`),
+  CONSTRAINT `FKbuiuwkgfo5yed0yvv1ec24gv0` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `certificate` */
+
+insert  into `certificate`(`id`,`certificate_code`,`issue_date`,`status`,`course_id`,`student_id`) values 
+(1,'1982cb10-6343-4c31-a167-605c8fca6678','2025-12-15 11:35:57.336156','ISSUED',1,4),
+(2,'1b0c4da1-1a9c-453d-82a2-0c35cb44a8d2','2025-12-17 15:30:16.060392','ISSUED',3,4);
+
+
+/* ============================================== */
+
+
+CREATE TABLE `lesson` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `content` varchar(255) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `module_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `title` (`title`),
+  KEY `FKimy8d7m2mtfspqjldlvr1sw99` (`module_id`),
+  CONSTRAINT `FKimy8d7m2mtfspqjldlvr1sw99` FOREIGN KEY (`module_id`) REFERENCES `course_module` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `lesson` */
+
+insert  into `lesson`(`id`,`content`,`title`,`module_id`) values 
+(1,'Variables, Data Types, Operators','Java Basics',1),
+(4,'Sturcture of webpage','HTML',2),
+(6,'methods','java',1),
+(9,'Variables, Data Types, Operators','Java Advanced',5),
+(11,'Variables, Data Types, Operators','Java Spring',2);
+
+
+/* =========================================================== */
+
+DROP TABLE IF EXISTS `assignment`;
+
+
+CREATE TABLE `assignment` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `description` varchar(255) DEFAULT NULL,
+  `due_date` date DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `lesson_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKitkm2jqcnrvh6i8ytlem7bsck` (`lesson_id`),
+  CONSTRAINT `FKitkm2jqcnrvh6i8ytlem7bsck` FOREIGN KEY (`lesson_id`) REFERENCES `lesson` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `assignment` */
+
+insert  into `assignment`(`id`,`description`,`due_date`,`title`,`lesson_id`) values 
+(1,'Submit a PDF explaining OOP Concepts','2025-12-01','Java OOP Assignment',1),
+(2,'use Html, css ','2025-12-13','Complete Structure of webpage',4),
+(3,'Submit a PDF explaining C Concepts','2025-12-01','C++ Assignment',1),
+(4,'Submit a PDF explaining C# Concepts','2025-12-01','C# Assignment',1),
+(5,'Submit a PDF explaining C# Concepts','2025-12-01','C# Assignment',4),
+(6,'Submit a PDF explaining Java Adv Concepts','2025-12-01','Java Advanced Assignment',9),
+(7,'Submit a PDF explaining Java Spring Concepts','2026-01-12','Java Spring Assignment',6),
+(8,'Submit a PDF explaining Java Data JPA Concepts','2026-01-12','Java Data JPA Assignment',11),
+(10,'Submit a PDF explaining Backend Concepts','2026-01-12','Backend Assignment',9);
+
+
+
+/* =================================================================== */
+
+
+
+CREATE TABLE `quiz` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `correct_answer` varchar(255) DEFAULT NULL,
+  `optiona` varchar(255) DEFAULT NULL,
+  `optionb` varchar(255) DEFAULT NULL,
+  `optionc` varchar(255) DEFAULT NULL,
+  `optiond` varchar(255) DEFAULT NULL,
+  `question` varchar(255) DEFAULT NULL,
+  `lesson_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKi10d7n4lf738sm3mon21aubik` (`lesson_id`),
+  CONSTRAINT `FKi10d7n4lf738sm3mon21aubik` FOREIGN KEY (`lesson_id`) REFERENCES `lesson` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `quiz` */
+
+insert  into `quiz`(`id`,`correct_answer`,`optiona`,`optionb`,`optionc`,`optiond`,`question`,`lesson_id`) values 
+(1,'A','Java Virtual Machine','Java Volume Manager','Joint Virtual Manager','Java Vendor Machine','What is JVM?',1),
+(2,'A','Hyper text markup language','high language','Higher marketing language','all of them','HTML full form',4),
+(3,'B','Java Virtual Machine','Java Development Kit','Joint Development kit','Java Developer kit','What is JDK?',4),
+(4,'A','Cascading StyleShit','com style shit','come stay style','All of the above','What is css?',6),
+(5,'D','Air India','Artifact Intel','Airtel Intelligence','Artificial Intelligence','What is AI?',9),
+(6,'D','Container of data','Block of memory','Used to store Data','All of the above','What is Variable?',11);
+
+
+
+/* ============================================================= */
+
+
+
+CREATE TABLE `video` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) DEFAULT NULL,
+  `video_url` varchar(255) DEFAULT NULL,
+  `lesson_id` bigint DEFAULT NULL,
+  `duration` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_lesson_video` (`lesson_id`),
+  KEY `UKlgdmfa11t9qt2t6lshmqb9upi` (`lesson_id`),
+  CONSTRAINT `FKt5q6im9i6ky6luw2l7ytxkwlm` FOREIGN KEY (`lesson_id`) REFERENCES `lesson` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `video` */
+
+insert  into `video`(`id`,`title`,`video_url`,`lesson_id`,`duration`) values 
+(1,'java demo','/videos/99f5abe9-ebd1-4a40-a439-a15e3c49a736_WhatsAppVideo.mp4',1,540),
+(5,'java demo','/videos/42e7cd79-dd74-4ae0-b344-4b9f7060020a_WhatsAppVideo.mp4',4,540),
+(11,'methodss','/videos/ef6e73b1-b837-46e0-8e89-ab93190b42ca_WhatsAppVideo.mp4',6,540),
+(15,'java Adv','/videos/a9ecb6b1-a476-4351-b24a-425957a3c010_WhatsAppVideo.mp4',9,540),
+(18,'Hibernate','/videos/f6028380-c77f-4537-bc8d-c618e27b636f_DemonSlayer.mp4',11,540);
+
+
+/* ========================================================= */
+
+
+
+CREATE TABLE `assignment_submission` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `feedback` varchar(255) DEFAULT NULL,
+  `file_path` varchar(255) DEFAULT NULL,
+  `grade` int DEFAULT NULL,
+  `submitted_at` datetime(6) DEFAULT NULL,
+  `assignment_id` bigint DEFAULT NULL,
+  `student_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_assignment_student` (`assignment_id`,`student_id`),
+  KEY `FKqsi9w45eary4louu2eds5a1r7` (`student_id`),
+  CONSTRAINT `FKi9tdkyaqlb4j7qm7y2k74jd7o` FOREIGN KEY (`assignment_id`) REFERENCES `assignment` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `FKqsi9w45eary4louu2eds5a1r7` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1153 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `assignment_submission` */
+
+insert  into `assignment_submission`(`id`,`feedback`,`file_path`,`grade`,`submitted_at`,`assignment_id`,`student_id`) values 
+(1,NULL,'1764843499017_invoice (1).pdf',95,'2025-12-04 15:48:19.024729',1,9),
+(52,NULL,'1764936549970_invoice (1).pdf',NULL,'2025-12-05 17:39:09.974705',1,10),
+(53,NULL,'1764936583694_invoice (1).pdf',95,'2025-12-05 17:39:43.696454',1,6),
+(103,NULL,'1766038570497_Lms_Portal.txt',NULL,'2025-12-18 11:46:10.502440',2,16),
+(104,NULL,'1765427801852_invoice (1).pdf',NULL,'2025-12-11 10:06:41.855011',2,5),
+(154,NULL,'1765966680230_invoice (1).pdf',NULL,'2025-12-17 15:48:00.235108',2,17),
+(203,NULL,'1766039353045_Lms_Portal.txt',NULL,'2025-12-18 11:59:13.050530',1,16),
+(252,NULL,'1766036442803_Lms_Portal.txt',NULL,'2025-12-18 11:10:42.808646',1,4),
+(253,NULL,'1766036673477_CertificateLMS.txt',NULL,'2025-12-18 11:14:33.481627',2,4),
+(254,NULL,'1766036451212_CertificateLMS.txt',NULL,'2025-12-18 11:10:51.215650',3,4),
+(256,NULL,'1766036683262_updatedPonits.txt',NULL,'2025-12-18 11:14:43.267836',5,4),
+(303,NULL,'1766038579738_updatedPonits.txt',NULL,'2025-12-18 11:46:19.741927',5,16),
+(404,NULL,'1765802663160_updatedPonits.txt',NULL,'2025-12-15 18:14:23.164712',1,18),
+(753,NULL,'1765967274780_updatedPonits.txt',NULL,'2025-12-17 15:57:54.786198',5,9),
+(755,NULL,'1766036461667_updatedPonits.txt',NULL,'2025-12-18 11:11:01.670758',4,4),
+(757,NULL,'1766036485051_updatedPonits.txt',NULL,'2025-12-18 11:11:25.054915',7,4),
+(1004,NULL,'1765965073333_Lms_Portal.txt',NULL,'2025-12-17 15:21:13.335064',6,4),
+(1005,NULL,'1765969582716_Lms_Portal.txt',NULL,'2025-12-17 16:36:22.719979',10,4),
+(1102,NULL,'1766039333879_updatedPonits.txt',NULL,'2025-12-18 11:58:53.893259',3,16),
+(1103,NULL,'1766039344804_CertificateLMS.txt',NULL,'2025-12-18 11:59:04.808922',4,16),
+(1104,NULL,'1766038978571_updatedPonits.txt',NULL,'2025-12-18 11:52:58.576636',7,16),
+(1152,NULL,'1766039892164_CertificateLMS.txt',NULL,'2025-12-18 12:08:12.170153',8,16);
+
+
+
+/* ========================================================================== */
+
+
+CREATE TABLE `submission` (
+  `id` bigint NOT NULL,
+  `file_url` varchar(255) DEFAULT NULL,
+  `grade` int DEFAULT NULL,
+  `assignment_id` bigint DEFAULT NULL,
+  `student_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK3q8643roa73llngo64dvpvtxt` (`assignment_id`),
+  KEY `FKjlg2bff2kbwi7yof7yc7fbokn` (`student_id`),
+  CONSTRAINT `FK3q8643roa73llngo64dvpvtxt` FOREIGN KEY (`assignment_id`) REFERENCES `assignment` (`id`),
+  CONSTRAINT `FKjlg2bff2kbwi7yof7yc7fbokn` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `submission` */
+
+
+/* ================================================================================ */
+
+
+
+CREATE TABLE `quiz_result` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `correct_answers` int NOT NULL,
+  `lesson_id` bigint NOT NULL,
+  `score_percentage` double NOT NULL,
+  `student_id` bigint NOT NULL,
+  `total_questions` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_quizresult_lesson` (`lesson_id`),
+  KEY `fk_quizresult_student` (`student_id`),
+  CONSTRAINT `fk_quizresult_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `lesson` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_quizresult_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=553 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `quiz_result` */
+
+insert  into `quiz_result`(`id`,`correct_answers`,`lesson_id`,`score_percentage`,`student_id`,`total_questions`) values 
+(1,0,1,0,9,1),
+(2,1,1,100,9,1),
+(52,1,1,100,9,1),
+(53,1,1,100,4,1),
+(54,1,1,100,4,1),
+(102,1,1,100,16,1),
+(103,1,1,100,16,1),
+(104,1,9,100,16,1),
+(105,1,9,100,16,1),
+(106,1,9,100,4,1),
+(107,1,1,100,4,1),
+(108,1,9,100,4,1),
+(152,1,1,100,4,1),
+(202,1,6,100,4,1),
+(203,2,4,100,4,2),
+(252,1,9,100,4,1),
+(302,1,9,100,4,1),
+(352,1,9,100,4,1),
+(353,1,1,100,4,1),
+(354,1,1,100,4,1),
+(355,1,9,100,4,1),
+(402,1,1,100,4,1),
+(403,1,1,100,4,1),
+(404,1,6,100,4,1),
+(405,1,6,100,4,1),
+(406,1,1,100,4,1),
+(407,1,1,100,16,1),
+(408,1,1,100,16,1),
+(409,1,6,100,16,1),
+(410,2,4,100,16,2),
+(411,1,1,100,16,1),
+(412,1,1,100,16,1),
+(413,1,6,100,16,1),
+(414,1,6,100,16,1),
+(421,1,1,100,4,1),
+(422,1,1,100,4,1),
+(423,1,6,100,4,1),
+(424,1,6,100,4,1),
+(425,2,4,100,4,2),
+(427,1,1,100,16,1),
+(428,1,6,100,16,1),
+(429,2,4,100,16,2),
+(452,1,1,100,16,1),
+(453,1,6,100,16,1),
+(454,2,4,100,16,2),
+(502,1,1,100,16,1),
+(552,1,1,100,16,1);
+
+
+/* ============================================================================ */
+
+
+
+CREATE TABLE `reply` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `message` varchar(255) DEFAULT NULL,
+  `discussion_id` bigint DEFAULT NULL,
+  `instructor_id` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKjlsdwpqsfbrcuuhpgeo69rvtg` (`discussion_id`),
+  KEY `FK5d4j004bhtlbhmxnhw5l13g76` (`instructor_id`),
+  CONSTRAINT `FK5d4j004bhtlbhmxnhw5l13g76` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `FKjlsdwpqsfbrcuuhpgeo69rvtg` FOREIGN KEY (`discussion_id`) REFERENCES `discussion` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `reply` */
+
+insert  into `reply`(`id`,`message`,`discussion_id`,`instructor_id`) values 
+(1,'Great question! Let me explain...',1,14),
+(2,'ok',1,14),
+(3,'Java is object oriented programming language',2,14),
+(4,'Great question! Let me explain...',1,2),
+(5,'Great question! Let me explain...',2,2); 
+
+
+
+/* ========================================================================== */
+
+
+CREATE TABLE `assignment_submission_seq` (
+  `next_val` bigint DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `assignment_submission_seq` */
+
+insert  into `assignment_submission_seq`(`next_val`) values 
+(1251);
+
+
+/* ========================================================================== */
+
+
+
+CREATE TABLE `quiz_result_seq` (
+  `next_val` bigint DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `quiz_result_seq` */
+
+insert  into `quiz_result_seq`(`next_val`) values 
+(651);
+
+
+
+/* ==================================================================== */
+
+
+
+CREATE TABLE `submission_seq` (
+  `next_val` bigint DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `submission_seq` */
+
+insert  into `submission_seq`(`next_val`) values 
+(1);
+
+
+/* ================================================================== */
+
+

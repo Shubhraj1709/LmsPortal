@@ -1,0 +1,92 @@
+student must be giving all quizes
+all assignments
+
+related to courses 
+
+==================================
+==================================
+1 { Course id }
+===================
+===================
+Certificate Eligibility == GET http://localhost:8080/api/student/certificates/eligibility/1
+
+response
+{
+    "message": "Student is eligible for certificate",
+    "eligible": true
+}
+or
+message : assignment submit first
+message : quize submit first
+====================================
+====================================
+Generate Certificate
+
+POST http://localhost:8080/api/student/certificates/generate/1
+
+====================================
+====================================
+
+Download Certificate
+
+GET  http://localhost:8080/api/student/certificates/download/1
+
+=====================================
+=====================================
+
+Certificate Details
+
+GET  http://localhost:8080/api/student/certificates/1
+
+==============================================
+
+1 { Course id }
+==================================================================
+==================================================================
+
+
+Upload Assignment 
+
+POST  http://localhost:8080/api/instructor/assignment/submit
+
+file , Assignment id == login student 
+
+======================================
+take quiz
+
+POST  http://localhost:8080/api/instructor/quiz/submit
+
+student id ( student login)
+lesson id ,
+answers :{
+	1:A
+	2:A
+   }
+======================================
+
+Grade Assignment submission
+(Instructor login)
+
+POST  http://localhost:8080/api/instructor/submission/53/grade?grade=95
+
+53 submission id ( student submit assingmnet then submission id genrate )
+95 grade
+
+========================================
+
+ADD VIdeo
+
+(INstructor Login)
+
+POST  http://localhost:8080/api/instructor/lesson/6/video
+
+{
+Title, 
+Video url,
+duration
+}
+
+
+
+
+

@@ -1,0 +1,1108 @@
+AdminUserService .java
+-------------------------
+
+package com.lmsportal.services;
+
+import com.lmsportal.repositories.NotificationRepository;
+import com.lmsportal.repositories.UserRepository;
+import com.lmsportal.dto.NotificationDTO;
+import com.lmsportal.enums.RoleEnum;
+import com.lmsportal.models.Notification;
+import com.lmsportal.models.User;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+
+import java.util.List;
+
+
+@Service
+public class AdminUserService {
+
+    private final NotificationRepository repo;
+
+	private final UserRepository userRepository;
+
+
+	public AdminUserService(UserRepository userRepository, NotificationRepository repo) {
+			this.userRepository = userRepository;
+			this.repo = repo;
+	}
+
+
+	public List<User> getStudents() {
+			return userRepository.findAll().stream().filter(u -> u.getRole() == com.lmsportal.enums.RoleEnum.STUDENT).toList();
+	}
+
+
+	public List<User> getInstructors() {
+			return userRepository.findAll().stream().filter(u -> u.getRole() == com.lmsportal.enums.RoleEnum.INSTRUCTOR).toList();
+	}
+
+
+//	@Transactional
+//	public User approveInstructor(Long userId) {
+//		User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+//		user.setApproved(true);
+//		return userRepository.save(user);
+//	}
+
+
+	@Transactional
+	public User setActive(Long userId, boolean active) {
+		User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+		user.setActive(active);
+		return userRepository.save(user);
+	}
+	
+	public List<User> getAllUsers() { return userRepository.findAll(); }
+
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User updateRole(Long id, RoleEnum role) {
+        User u = getUserById(id);
+        u.setRole(role);
+        return userRepository.save(u);
+    }
+
+    public void deleteUser(Long id) { userRepository.deleteById(id); }
+
+    // Instructor workflow
+    public List<User> getPendingInstructors() {
+        return userRepository.findByRoleAndApproved(RoleEnum.INSTRUCTOR, false);
+    }
+
+    public User approveInstructor(Long id) {
+        User u = getUserById(id);
+        u.setApproved(true);
+        return userRepository.save(u);
+    }
+
+//    public User rejectInstructor(Long id) {
+//        User u = getUserById(id);
+//        u.setApproved(false);
+//        return userRepository.save(u);
+//    }
+    public void rejectInstructor(Long id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Optional safety check
+        if (user.getRole() != RoleEnum.INSTRUCTOR) {
+            throw new RuntimeException("User is not an instructor");
+        }
+
+        userRepository.deleteById(id);
+    }
+
+	
+   
+}
+
+
+==============================================================================
+
+
+AdminUserController.java
+
+---------------------------
+
+package com.lmsportal.controllers;
+
+import com.lmsportal.models.User;
+import com.lmsportal.services.AdminUserService;
+import com.lmsportal.dto.UserRoleDTO;
+import com.lmsportal.dto.UserStatusDTO;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+
+import java.util.List;
+
+
+@RestController
+@RequestMapping("/api/admin")
+public class AdminUserController {
+
+
+	private final AdminUserService adminUserService;
+
+
+	public AdminUserController(AdminUserService adminUserService) {
+		this.adminUserService = adminUserService;
+	}
+
+
+	@GetMapping("/students")
+	public ResponseEntity<List<User>> getStudents() {
+		return ResponseEntity.ok(adminUserService.getStudents());
+	}
+
+
+	@GetMapping("/instructors")
+	public ResponseEntity<List<User>> getInstructors() {
+		return ResponseEntity.ok(adminUserService.getInstructors());
+	}
+
+
+//	@PutMapping("/approve-instructor/{id}")
+//	public ResponseEntity<User> approveInstructor(@PathVariable("id") Long id) {
+//		return ResponseEntity.ok(adminUserService.approveInstructor(id));
+//	}
+
+
+	@PutMapping("/status")
+	public ResponseEntity<User> setStatus(@RequestBody UserStatusDTO dto) {
+		return ResponseEntity.ok(adminUserService.setActive(dto.getUserId(), dto.isActive()));
+	}
+	
+	@GetMapping("/users")
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(adminUserService.getAllUsers());
+    }
+
+    @GetMapping("/users/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(adminUserService.getUserById(id));
+    }
+
+    @PutMapping("/users/{id}/role")
+    public ResponseEntity<User> updateUserRole(@PathVariable Long id,
+                                               @RequestBody UserRoleDTO dto) {
+        return ResponseEntity.ok(adminUserService.updateRole(id, dto.getRole()));
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+        adminUserService.deleteUser(id);
+        return ResponseEntity.ok("User deleted.");
+    }
+
+    // Instructor Workflow
+    @GetMapping("/instructors/pending")
+    public ResponseEntity<List<User>> pendingInstructors() {
+        return ResponseEntity.ok(adminUserService.getPendingInstructors());
+    }
+
+    @PutMapping("/instructors/approve/{id}")
+    public ResponseEntity<User> approveInstructor(@PathVariable Long id) {
+        return ResponseEntity.ok(adminUserService.approveInstructor(id));
+    }
+
+//    @PutMapping("/instructors/reject/{id}")
+//    public ResponseEntity<User> rejectInstructor(@PathVariable Long id) {
+//        return ResponseEntity.ok(adminUserService.rejectInstructor(id));
+//    }
+    
+    @DeleteMapping("/instructors/reject/{id}")
+    public ResponseEntity<Void> rejectInstructor(@PathVariable Long id) {
+        adminUserService.rejectInstructor(id);
+        return ResponseEntity.noContent().build(); // 204
+    }
+
+}
+
+
+=======================================================================
+
+AdminDashboard.jsx
+----------------------
+----------------------
+
+import React, { useEffect, useState } from "react";
+import axios from "../../api/axiosConfig";
+import {
+  Tabs,
+  Tab,
+  Table,
+  Button,
+  Modal,
+  Form,
+  Badge,
+  Row,
+  Col,
+  Card,
+} from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+import { Dropdown } from "react-bootstrap";
+
+
+import "../../styles/adminDashboard.css";
+
+export default function AdminDashboard() {
+  const navigate = useNavigate();
+
+  const [key, setKey] = useState("users");
+  const [users, setUsers] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [revenue, setRevenue] = useState(0);
+  const [pendingInstructors, setPendingInstructors] = useState([]);
+  const [enrollments, setEnrollments] = useState([]);
+  const [notificationsSent, setNotificationsSent] = useState([]);
+  const [revenueReport, setRevenueReport] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [verifyingId, setVerifyingId] = useState(null);
+
+  const [showModal, setShowModal] = useState(false);
+  const [type, setType] = useState("");
+  const [data, setData] = useState({});
+   
+  const [courseStudents, setCourseStudents] = useState([]);
+const [selectedCourseId, setSelectedCourseId] = useState("");
+
+  /* ───────── LOGOUT ───────── */
+  const logout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
+
+  /* ───────── LOADERS ───────── */
+  const loadUsers = async () => {
+    const res = await axios.get("/admin/users");
+    setUsers(res.data);
+  };
+
+  const loadCategories = async () => {
+    const res = await axios.get("/auth/categories");
+    setCategories(res.data);
+  };
+
+  const loadCourses = async () => {
+    const res = await axios.get("/auth/courses");
+    setCourses(res.data);
+  };
+
+ const loadRevenue = async () => {
+  try {
+    const res = await axios.get(
+      "/admin/reports/revenue?from=2025-01-01&to=2025-12-31"
+    );
+
+    setRevenue(res.data.totalRevenue || 0);
+
+    if (Array.isArray(res.data.monthly)) {
+      setRevenueReport(res.data.monthly);
+    } else {
+      setRevenueReport([]);
+    }
+  } catch (err) {
+    console.error("Failed to load revenue", err);
+    setRevenue(0);
+    setRevenueReport([]);
+  }
+};
+ 
+
+  const loadPendingInstructors = async () => {
+    const res = await axios.get("/admin/instructors/pending");
+    setPendingInstructors(res.data);
+  };
+
+  const loadEnrollments = async () => {
+    try {
+      const res = await axios.get("/admin/reports/enrollments");
+      if (Array.isArray(res.data)) setEnrollments(res.data);
+      else if (Array.isArray(res.data.enrollments)) setEnrollments(res.data.enrollments);
+      else if (Array.isArray(res.data.data)) setEnrollments(res.data.data);
+      else setEnrollments([]);
+    } catch (err) {
+      console.error("Failed to load enrollments", err);
+      setEnrollments([]);
+    }
+  };
+
+const loadCourseStudents = async (courseId) => {
+  try {
+    const res = await axios.get(`/instructor/course/${courseId}/students`);
+
+    // ✅ Always display exactly what backend sends
+    if (Array.isArray(res.data)) {
+      setCourseStudents(res.data);
+    } else if (Array.isArray(res.data.students)) {
+      setCourseStudents(res.data.students);
+    } else {
+      setCourseStudents([]);
+    }
+
+  } catch (err) {
+    console.error("Failed to load studentss", err);
+    setCourseStudents([]);
+  }
+};
+
+
+  const approveInstructor = async (id) => {
+  if (!window.confirm("Approve this instructor?")) return;
+
+  try {
+    setVerifyingId(id);
+    await axios.put(`/admin/instructors/approve/${id}`);
+
+    await loadPendingInstructors();
+    await loadUsers();
+  } catch (err) {
+    console.error("Approve failed", err);
+    alert("Failed to approve instructor");
+  } finally {
+    setVerifyingId(null);
+  }
+};
+
+const rejectInstructor = async (id) => {
+  if (!window.confirm("Reject this instructor request?")) return;
+
+  try {
+    setVerifyingId(id);
+    await axios.delete(`/admin/instructors/reject/${id}`);
+
+
+    await loadPendingInstructors();
+    await loadUsers();
+  } catch (err) {
+    console.error("Reject failed", err);
+    alert("Failed to reject instructor");
+  } finally {
+    setVerifyingId(null);
+  }
+};
+
+
+  useEffect(() => {
+    loadUsers();
+    loadCategories();
+    loadCourses();
+    loadRevenue();
+    loadPendingInstructors();
+    loadEnrollments();
+    loadAllNotifications();
+  }, []);
+
+  useEffect(() => {
+  if (selectedCourseId) {
+    loadCourseStudents(selectedCourseId);
+  } else {
+    setCourseStudents([]);
+  }
+}, [selectedCourseId]);
+
+
+
+  /* ───────── USER ACTIONS ───────── */
+  const updateRole = async () => {
+    await axios.put(`/admin/users/${data.id}/role`, { role: data.role });
+    loadUsers();
+    setShowModal(false);
+  };
+
+  const deleteUser = async (id) => {
+    if (window.confirm("Delete this user?")) {
+      await axios.delete(`/admin/users/${id}`);
+      loadUsers();
+    }
+  };
+
+  /* ───────── CATEGORY ACTIONS ───────── */
+  const saveCategory = async () => {
+  if (!data.name || !data.description) {
+    return alert("Category name and description are required");
+  }
+
+  try {
+    if (data.id) {
+      await axios.put(`/admin/categories/${data.id}`, {
+        name: data.name,
+        description: data.description,
+      });
+    } else {
+      await axios.post("/admin/categories", {
+        name: data.name,
+        description: data.description,
+      });
+    }
+
+    loadCategories();
+    setShowModal(false);
+  } catch (err) {
+    console.error("Failed to save category:", err.response?.data || err.message);
+    alert("Failed to save category");
+  }
+};
+
+
+  const deleteCategory = async (id) => {
+  if (
+    window.confirm(
+      "Deleting this category will also delete all related courses.\nAre you sure?"
+    )
+  ) {
+    try {
+      await axios.delete(`/admin/categories/${id}`);
+      loadCategories();
+      loadCourses(); // keep UI synced
+    } catch (err) {
+      alert("Failed to delete category");
+      console.error(err);
+    }
+  }
+};
+
+  /* ───────── COURSE ACTIONS ───────── */
+  const saveCourse = async () => {
+  if (!data.title || !data.description || !data.categoryId || !data.level || data.price == null) {
+    return alert("Please fill all fields");
+  }
+
+  try {
+    if (data.id) {
+      await axios.put(`/admin/courses/${data.id}`, data);
+    } else {
+      await axios.post("/admin/courses", data);
+    }
+    loadCourses();
+    setShowModal(false);
+  } catch (err) {
+    console.error("Failed to save course:", err.response?.data || err.message);
+    alert("Failed to save course. Check console for details.");
+  }
+};
+
+
+  const deleteCourse = async (id) => {
+  if (!window.confirm("Delete this course?")) return;
+
+  try {
+    await axios.delete(`/admin/courses/${id}`);
+  } catch (err) {
+    console.warn("Delete returned error, but course may be deleted", err.response?.status);
+  } finally {
+    loadCourses(); // always reload
+  }
+};
+
+  //-------notification----
+  const loadAllNotifications = async () => {
+  try {
+    const res = await axios.get("/admin/notifications"); 
+    if (Array.isArray(res.data)) {
+      setNotificationsSent(res.data);
+    } else if (Array.isArray(res.data.notifications)) {
+      setNotificationsSent(res.data.notifications);
+    } else {
+      setNotificationsSent([]);
+    }
+  } catch (err) {
+    console.error("Failed to load notifications", err);
+    setNotificationsSent([]);
+  }
+};
+
+
+  /* ───────── NOTIFICATIONS ───────── */
+const sendNotification = async () => {
+  if (!data.title || !data.message) {
+    return alert("Title & message required");
+  }
+
+  try {
+    // Send to ALL users
+    if (data.sendTo === "ALL") {
+      await axios.post("/admin/all", {
+        title: data.title,
+        message: data.message
+      });
+    }
+
+    // Send to SPECIFIC ROLE
+    if (data.sendTo === "ROLE" && data.role) {
+      await axios.post("/admin/role", {
+        title: data.title,
+        message: data.message,
+        role: data.role
+      });
+    }
+
+    // Reload list
+    await loadAllNotifications();
+    setShowModal(false);
+    alert("Notification sent!");
+
+  } catch (err) {
+    console.error("Error sending notification", err);
+    alert("Failed to send notification");
+  }
+};
+
+
+
+  return (
+    <div className="admin-dashboard d-flex flex-column flex-md-row">
+      
+      {/* ───── SIDEBAR ───── */}
+      {/* ───── SIDEBAR ───── */}
+<aside className={`admin-sidebar ${sidebarOpen ? "open" : ""}`}>
+  <div className="sidebar-header d-flex justify-content-between align-items-center mb-4">
+    <h4 className="logo mb-0">Admin Panel</h4>
+
+    {/* CLOSE BUTTON (mobile only) */}
+    <Button
+      variant="light"
+      className="d-md-none icon-btn"
+      onClick={() => setSidebarOpen(false)}
+    >
+      ✕
+    </Button>
+  </div>
+
+
+  <nav className="flex-column mb-3">
+    <Button variant="light" className="mb-2 w-100 text-start" onClick={() => setKey("users")}>
+      👤 Users
+    </Button>
+    <Button variant="light" className="mb-2 w-100 text-start" onClick={() => setKey("instructors")}>
+      🧑‍🏫 Verify Role
+    </Button>
+    <Button variant="light" className="mb-2 w-100 text-start" onClick={() => setKey("categories")}>
+      📁 Categories
+    </Button>
+    <Button variant="light" className="mb-2 w-100 text-start" onClick={() => setKey("courses")}>
+      📚 Courses
+    </Button>
+    <Button variant="light" className="mb-2 w-100 text-start" onClick={() => setKey("reports")}>
+      📊 Reports
+    </Button>
+    <Button variant="light" className="mb-2 w-100 text-start" onClick={() => setKey("notifications")}>
+      🔔 Notifications
+    </Button>
+  </nav>
+
+  <Button variant="danger" className="mt-auto w-100" onClick={logout}>
+    Logout
+  </Button>
+</aside>
+
+{/* OVERLAY (mobile only) */}
+{sidebarOpen && (
+  <div
+    className="sidebar-overlay"
+    onClick={() => setSidebarOpen(false)}
+  />
+)}
+
+
+      {/* ───── MAIN CONTENT ───── */}
+      <main className="admin-content flex-grow-1 p-3">
+     <div className="admin-header d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+
+        <Button
+  className="d-md-none icon-btn"
+  variant="light"
+  onClick={() => setSidebarOpen(!sidebarOpen)}
+>
+  ☰
+</Button>
+
+  <h2 className="mb-0 fw-bold">Dashboard Overview</h2>
+
+  {/* RIGHT ACTIONS */}
+  <div className="d-flex align-items-center gap-3">
+    
+    {/* 🔔 Notifications */}
+    <Dropdown align="end">
+      <Dropdown.Toggle
+        variant="light"
+        className="icon-btn position-relative shadow-sm"
+      >
+        🔔
+        {notificationsSent.length > 0 && (
+          <span className="badge bg-danger position-absolute top-0 start-100 translate-middle">
+            {notificationsSent.length}
+          </span>
+        )}
+      </Dropdown.Toggle>
+
+      <Dropdown.Menu style={{ width: 320 }}>
+        <Dropdown.Header>Notifications</Dropdown.Header>
+
+        {notificationsSent.length === 0 ? (
+          <Dropdown.ItemText className="text-muted">
+            No notifications
+          </Dropdown.ItemText>
+        ) : (
+          notificationsSent.slice(0, 5).map((n, i) => (
+            <Dropdown.Item key={i} className="small">
+              <strong>{n.title}</strong>
+              <div className="text-muted">{n.message}</div>
+            </Dropdown.Item>
+          ))
+        )}
+
+        <Dropdown.Divider />
+
+        <Dropdown.Item as="div">
+          <Button
+            size="sm"
+            className="w-100"
+            onClick={() => {
+              setType("notification");
+              setData({ sendTo: "ALL" });
+              setShowModal(true);
+            }}
+          >
+            ➕ New Notification
+          </Button>
+        </Dropdown.Item>
+      </Dropdown.Menu>
+    </Dropdown>
+
+    {/* 🌙 Dark Mode */}
+    <Button
+      variant="light"
+      className="icon-btn shadow-sm"
+      onClick={() => document.body.classList.toggle("dark-mode")}
+      title="Toggle Dark Mode"
+    >
+      🌙
+    </Button>
+  </div>
+</div>
+
+
+
+        {/* SUMMARY CARDS */}
+        <Row className="mb-4">
+          <Col xs={12} md={4}>
+            <Card className="text-center mb-2">
+              <Card.Body>
+                <Card.Title>Total Users</Card.Title>
+                <Card.Text>{users.length}</Card.Text>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col xs={12} md={4}>
+            <Card className="text-center mb-2">
+              <Card.Body>
+                <Card.Title>Total Courses</Card.Title>
+                <Card.Text>{courses.length}</Card.Text>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col xs={12} md={4}>
+            <Card className="text-center mb-2">
+              <Card.Body>
+                <Card.Title>Revenue</Card.Title>
+                <Card.Text>₹{revenue}</Card.Text>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
+        <Tabs activeKey={key} onSelect={setKey} className="mb-3" mountOnEnter>
+          {/* USERS */}
+          <Tab eventKey="users" title="Users">
+            <div className="table-responsive">
+              <Table hover bordered responsive>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id}>
+                      <td>{u.name}</td>
+                      <td>{u.email}</td>
+                      <td><Badge bg="secondary">{u.role}</Badge></td>
+                      <td><Badge bg={u.status === "ACTIVE" ? "success" : "warning"}>{u.status}</Badge></td>
+                      <td className="action-buttons">
+                        {u.role === "INSTRUCTOR" && u.status === "PENDING" && (
+                          <>
+                            <Button size="sm" variant="success" onClick={() => approveInstructor(u.id)}>Approve</Button>{" "}
+                            <Button size="sm" variant="warning" onClick={() => rejectInstructor(u.id)}>Reject</Button>
+                          </>
+                        )}
+                        <Button size="sm" variant="primary" onClick={() => { setType("user"); setData(u); setShowModal(true); }}>Edit</Button>
+                        <Button size="sm" variant="outline-danger" onClick={() => deleteUser(u.id)}>Delete</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          </Tab>
+
+          {/* Pending Instructors */}
+          <Tab eventKey="instructors" title="Verify Role">
+  <Card className="shadow-sm border-0">
+    <Card.Body>
+
+      <h5 className="mb-3 fw-bold">🧑‍🏫 Verify Role</h5>
+
+      <div className="table-responsive">
+        <Table hover responsive className="align-middle mb-0">
+          <thead className="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th className="text-center">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {pendingInstructors.length === 0 ? (
+              <tr>
+                <td colSpan="4" className="text-center text-muted py-4">
+                  ✅ No pending instructor requests
+                </td>
+              </tr>
+            ) : (
+              pendingInstructors.map((i) => (
+                <tr key={i.id}>
+                  <td className="fw-semibold">{i.name}</td>
+                  <td className="text-muted">{i.email}</td>
+
+                  {/* STATUS */}
+                  <td>
+                    <Badge bg="warning" text="dark">
+                      Pending
+                    </Badge>
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td className="text-center">
+                    <div className="d-flex justify-content-center gap-2">
+
+                      <Button
+                        size="sm"
+                        variant="success"
+                        disabled={verifyingId === i.id}
+                        onClick={() => approveInstructor(i.id)}
+                      >
+                        {verifyingId === i.id ? "⏳ Approving..." : "✔ Approve"}
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline-danger"
+                        disabled={verifyingId === i.id}
+                        onClick={() => rejectInstructor(i.id)}
+                      >
+                        ✖ Reject
+                      </Button>
+
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </Table>
+      </div>
+
+    </Card.Body>
+  </Card>
+</Tab>
+
+
+          {/* CATEGORIES */}
+           <Tab eventKey="categories" title="Categories">
+            <Button className="mb-3" onClick={() => { setType("category"); setData({}); setShowModal(true); }}>➕ Add Category</Button>
+            <Table hover bordered responsive>
+              <tbody>
+                {Array.isArray(categories) && categories.map((c) => (
+
+                  <tr key={c.id}>
+                    <td>{c.name}</td>
+                    <td>{c.description}</td>
+                    <td>
+                      <Button size="sm" onClick={() => { setType("category"); setData(c); setShowModal(true); }}>Edit</Button>{" "}
+                      <Button size="sm" variant="outline-danger" onClick={() => deleteCategory(c.id)}>Delete</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Tab>
+
+
+
+          {/* COURSES */}
+          <Tab eventKey="courses" title="Courses">
+            <Button className="mb-3" onClick={() => { setType("course"); setData({}); setShowModal(true); }}>➕ Add Course</Button>
+            <Table hover bordered responsive>
+              <tbody>
+                {courses.map((c) => (
+                  <tr key={c.id}>
+                    <td>{c.title}</td>
+                    <td>₹{c.price}</td>
+                    <td>{c.level}</td>
+                    <td>
+                      <Button size="sm" onClick={() => { setType("course"); setData(c); setShowModal(true); }}>Edit</Button>{" "}
+                      <Button size="sm" variant="outline-danger" onClick={() => deleteCourse(c.id)}>Delete</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Tab>
+
+          {/* REPORTS */}
+         <Tab eventKey="reports" title="Reports">
+  <h5 className="mb-3">📚 Enrollments Report</h5>
+
+  {/* <Table hover bordered responsive className="mb-4">
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>Course</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {enrollments.length === 0 ? (
+        <tr>
+          <td colSpan="3" className="text-center">No enrollments found</td>
+        </tr>
+      ) : (
+        enrollments.map((e, idx) => (
+          <tr key={idx}>
+            <td>{e.studentName}</td>
+            <td>{e.courseTitle}</td>
+            <td>{new Date(e.enrolledAt).toLocaleDateString()}</td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </Table> */}
+
+<Form.Select
+  className="mb-3"
+  value={selectedCourseId}
+  onChange={(e) => setSelectedCourseId(e.target.value)}
+>
+  <option value="">-- Select Course --</option>
+  {courses.map((c) => (
+    <option key={c.id} value={c.id}>
+      {c.title}
+    </option>
+  ))}
+</Form.Select>
+
+<h5 className="mb-3">👨‍🎓 Enrolled Students</h5>
+
+<Table bordered hover responsive>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Course</th>
+      <th>Active</th>
+      {/* <th>Approved</th> */}
+    </tr>
+  </thead>
+<tbody>
+  {courseStudents.length === 0 ? (
+    <tr>
+      <td colSpan="5" className="text-center">
+        No students enrolled
+      </td>
+    </tr>
+  ) : (
+    courseStudents.map((s, index) => {
+      const selectedCourseName =
+        courses.find((c) => c.id === Number(selectedCourseId))?.title || "-";
+
+      return (
+        <tr key={`${s.id}-${index}`}>
+          <td>{s.name}</td>
+          <td>{s.email}</td>
+          <td>{selectedCourseName}</td>
+          <td>
+            <Badge bg={s.active ? "success" : "secondary"}>
+              {s.active ? "Active" : "Inactive"}
+            </Badge>
+          </td>
+          {/* <td>
+            <Badge bg={s.approved ? "success" : "warning"}>
+              {s.approved ? "Approved" : "Pending"}
+            </Badge>
+          </td> */}
+        </tr>
+      );
+    })
+  )}
+</tbody>
+
+</Table>
+
+  {/* 💰 REVENUE REPORT */}
+  <h5 className="mb-3">💰 Revenue Report</h5>
+
+  <Row>
+    <Col md={4}>
+      <Card className="text-center shadow-sm mb-3">
+        <Card.Body>
+          <Card.Title>Total Revenue</Card.Title>
+          <Card.Text className="fs-4 fw-bold text-success">
+            ₹{revenue}
+          </Card.Text>
+        </Card.Body>
+      </Card>
+    </Col>
+  </Row>
+</Tab>
+
+
+          {/* NOTIFICATIONS */}
+          <Tab eventKey="notifications" title="Notifications">
+            <Button className="mb-3" onClick={() => { setType("notification"); setData({ sendTo: "ALL" }); setShowModal(true); }}>➕ New Notification</Button>
+            <Table hover bordered responsive>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Message</th>
+                  <th>Send To / Role</th>
+                  <th>Sent At</th>
+                </tr>
+              </thead>
+            <tbody>
+  {notificationsSent.length === 0 ? (
+    <tr>
+      <td colSpan="4">No notifications found.</td>
+    </tr>
+  ) : (
+    notificationsSent.map((n, i) => (
+      <tr key={i}>
+        <td>{n.title}</td>
+        <td>{n.message}</td>
+        <td>{n.sendTo === "ROLE" ? n.role : "ALL"}</td>
+        <td>{new Date(n.sentAt).toLocaleString()}</td>
+      </tr>
+    ))
+  )}
+</tbody>
+
+            </Table>
+          </Tab>
+        </Tabs>
+      </main>
+
+      {/* MODAL */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Manage {type}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {type === "user" && (
+            <>
+              <Form.Select
+                className="mb-3"
+                value={data.role}
+                onChange={(e) => setData({ ...data, role: e.target.value })}
+              >
+                <option>STUDENT</option>
+                <option>INSTRUCTOR</option>
+                <option>ADMIN</option>
+              </Form.Select>
+              <Button onClick={updateRole} className="w-100">Save Role</Button>
+            </>
+          )}
+
+          {type === "category" && (
+            <>
+              <Form.Control className="mb-2" placeholder="Category Name" value={data.name || ""} onChange={(e) => setData({ ...data, name: e.target.value })} />
+              <Form.Control className="mb-3" placeholder="Description" value={data.description || ""} onChange={(e) => setData({ ...data, description: e.target.value })} />
+              <Button onClick={saveCategory} className="w-100">Save Category</Button>
+            </>
+          )}
+
+          {type === "course" && (
+  <>
+    <Form.Control
+      className="mb-2"
+      placeholder="Course Title"
+      value={data.title || ""}
+      onChange={(e) => setData({ ...data, title: e.target.value })}
+    />
+
+    <Form.Control
+      className="mb-2"
+      placeholder="Description"
+      value={data.description || ""}
+      onChange={(e) => setData({ ...data, description: e.target.value })}
+    />
+
+    <Form.Control
+      className="mb-2"
+      type="number"
+      placeholder="Price"
+      value={data.price || ""}
+      onChange={(e) => setData({ ...data, price: Number(e.target.value) })}
+    />
+
+    {/* ⭐ CATEGORY DROPDOWN ADDED HERE */}
+    <Form.Select
+      className="mb-2"
+      value={data.categoryId || ""}
+     onChange={(e) =>setData({ ...data, categoryId: parseInt(e.target.value) })
+}
+
+    >
+      <option value="">Select Category</option>
+      {Array.isArray(categories) &&
+      categories.map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.name}
+        </option>
+      ))}
+    </Form.Select>
+
+    <Form.Select
+      className="mb-3"
+      value={data.level || "BEGINNER"}
+      onChange={(e) => setData({ ...data, level: e.target.value })}
+    >
+      <option>BEGINNER</option>
+      <option>INTERMEDIATE</option>
+      <option>ADVANCED</option>
+    </Form.Select>
+
+    <Button onClick={saveCourse} className="w-100">Save Course</Button>
+  </>
+)}
+
+
+
+  
+
+          {type === "notification" && (
+            <>
+              <Form.Control className="mb-2" placeholder="Title" value={data.title || ""} onChange={(e) => setData({ ...data, title: e.target.value })} />
+              <Form.Control className="mb-2" placeholder="Message" as="textarea" rows={3} value={data.message || ""} onChange={(e) => setData({ ...data, message: e.target.value })} />
+              <Form.Select className="mb-3" value={data.sendTo || "ALL"} onChange={(e) => setData({ ...data, sendTo: e.target.value })}>
+                <option value="ALL">All Users</option>
+                <option value="ROLE">Specific Role</option>
+              </Form.Select>
+              {data.sendTo === "ROLE" && (
+                <Form.Select className="mb-3" value={data.role || ""} onChange={(e) => setData({ ...data, role: e.target.value })}>
+                  <option value="">Select Role</option>
+                  <option value="STUDENT">Student</option>
+                  <option value="INSTRUCTOR">Instructor</option>
+                  <option value="ADMIN">Admin</option>
+                </Form.Select>
+              )}
+              <Button onClick={sendNotification} className="w-100">Send Notification</Button>
+            </>
+          )}
+        </Modal.Body>
+      </Modal>
+    </div>
+  );
+}

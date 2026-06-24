@@ -1,0 +1,62 @@
+
+
+admin
+
+eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbkBsbXMuY29tIiwicm9sZXMiOiJST0xFX0FETUlOLEZBQ1RPUl9QQVNTV09SRCIsImlhdCI6MTc2NTc3MjgyNiwiZXhwIjoxNzY1ODU5MjI2fQ.Q1d-IaW6r9y4Vu-H2T2JupcF8rQBIyngflnuCMFSaTFPJ5diRpxSVQOhD_23-AuLmsjQ8Xz4oOkLvD34Ypr7TQ
+
+-------------------------------------------------------------------------------------
+
+student
+
+eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJzaHViaEBzdHVkZW50LmNvbSIsInJvbGVzIjoiUk9MRV9TVFVERU5ULEZBQ1RPUl9QQVNTV09SRCIsImlhdCI6MTc2NTc3Mjg4MiwiZXhwIjoxNzY1ODU5MjgyfQ.B47H2zsgJuqGudPt1Cqtuo2wOJYiLUV4nAdz3ZmAuNs85_1I8oxOPkFWUKxh7AVG_AwmUem67EHrII5qjwHqTw
+
+
+-------------------------------------------------------------------------------------
+
+instructer
+
+eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJyYWh1bEBpbnN0cnVjdG9yLmNvbSIsInJvbGVzIjoiUk9MRV9JTlNUUlVDVE9SLEZBQ1RPUl9QQVNTV09SRCIsImlhdCI6MTc2NTc3Mjg1NCwiZXhwIjoxNzY1ODU5MjU0fQ.uQmZBS3q7GhfJOBEczOihbe0qJfLTIXjlJgQb0G8TQBFOAa967ftKICbsNRJJCkvIE6pf5hhdzcZHbk1O_33Vw
+
+
+--------------------------------------------------------------------------------------
+
+
+
+✅ Course Category Management
+✅ Course Management
+✅ Reports Module (Revenue, Enrollments, Progress)
+✅ Notification/Announcements Module
+✅ Instructor Approval Workflow
+✅ User Management (Students / Instructors)
+
+
+
+-----------------------------------------------
+==============================================
+==============================================
+-----------------------------------------------
+
+npm install react-router-dom axios
+
+
+
+-----------------------------------------------
+
+
+
+POST /instructor/course/{courseId}/module
+POST /instructor/module/{moduleId}/lesson
+POST /instructor/lesson/{lessonId}/video
+POST /instructor/lesson/{lessonId}/quiz
+POST /instructor/lesson/{lessonId}/assignment
+
+------------------------------------------------------
+
+PUT /instructor/course/{id}/publish
+
+---------------------
+
+
+
+assignment , assignment_submission ,  assignment_submission_seq , course_categories , course_module , courses , discussion , enrollments , lesson , notifications , quiz ,
+quiz_result , quiz_result_seq , reply , settings , submission , submission_seq ,  users , video 

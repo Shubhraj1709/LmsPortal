@@ -1,0 +1,17 @@
+Get all Categories
+
+GET   http://localhost:8080/api/auth/categories
+
+==========================================================
+
+Get all Courses
+
+GET  http://localhost:8080/api/auth/courses
+
+==========================================================
+
+Get all Videos
+
+GET  http://localhost:8080/api/auth/videos
+
+=========================================================

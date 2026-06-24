@@ -1,0 +1,1990 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "../../styles/InstructorDashboard.css";
+import { Pie } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { Button, Card, Spinner, Row, Col } from "react-bootstrap";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
+
+
+const api = axios.create({
+  baseURL: "http://localhost:8080/api",
+});
+
+api.interceptors.request.use((cfg) => {
+  const token = localStorage.getItem("token");
+  if (token) cfg.headers.Authorization = `Bearer ${token}`;
+  return cfg;
+});
+
+export default function InstructorDashboard() {
+  const [tab, setTab] = useState("overview");
+  const [courses, setCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [courseDetails, setCourseDetails] = useState({});
+  const [selectedModuleId, setSelectedModuleId] = useState(null);
+  const [selectedLessonId, setSelectedLessonId] = useState(null);
+  const [selectedDiscussionId, setSelectedDiscussionId] = useState(null);
+
+  const [studentsList, setStudentsList] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [discussions, setDiscussions] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [courseProgress, setCourseProgress] = useState(null);
+const [studentSearch, setStudentSearch] = useState("");
+
+const [publishing, setPublishing] = useState({});
+
+  // --------- Form states ----------
+  const [newCourse, setNewCourse] = useState({ title: "", description: "", price: 0 });
+  const [modulePayload, setModulePayload] = useState({ title: "", description: "" });
+  const [lessonPayload, setLessonPayload] = useState({ title: "", content: "" });
+  const [videoPayload, setVideoPayload] = useState({ title: "", videoUrl: "", duration: 0 });
+  const [quizPayload, setQuizPayload] = useState({ question: "", optionA: "", optionB: "", optionC: "", optionD: "", correctAnswer: "A" });
+  const [assignmentPayload, setAssignmentPayload] = useState({ id: null, title: "", description: "", dueDate: "" });
+  const [enrollPayload, setEnrollPayload] = useState({ amountPaid: 0, progressPercentage: 0, student: { id: "" } });
+  const [discussionPayload, setDiscussionPayload] = useState({ question: "", courseId: null, studentId: null });
+  const [replyPayload, setReplyPayload] = useState({ message: "", discussionId: null });
+  const [assignmentFile, setAssignmentFile] = useState(null);
+  const [allVideos, setAllVideos] = useState([]);
+  const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
+  const [showModuleModal, setShowModuleModal] = useState(false);
+  const [showLessonModal, setShowLessonModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [showDiscussionModal, setShowDiscussionModal] = useState(false);
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [showSubmitAssignmentModal, setShowSubmitAssignmentModal] = useState(false);
+const [notifications, setNotifications] = useState([]);
+const [showNotificationModal, setShowNotificationModal] = useState(false);
+const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+const [courseData, setCourseData] = useState({
+  title: "",
+  description: "",
+  price: 0,
+  categoryId: "",
+  level: "BEGINNER"
+});
+
+const [categories, setCategories] = useState([]);
+const [loading, setLoading] = useState(false);
+
+useEffect(() => {
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get("/auth/categories");
+      setCategories(res.data);
+    } catch (err) {
+      console.error("Failed to fetch categories", err);
+    }
+  };
+
+  fetchCategories();
+}, []);
+
+const [instructor, setInstructor] = useState(null);
+
+useEffect(() => {
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    try {
+      setInstructor(JSON.parse(storedUser));
+    } catch (e) {
+      console.error("Invalid user in localStorage");
+      setInstructor(null);
+    }
+  }
+}, []);
+
+
+const [theme, setTheme] = useState(
+  localStorage.getItem("theme") || "light"
+);
+const openEnrollModal = async () => {
+  if (!selectedCourse) {
+    alert("Please select a course first");
+    return;
+  }
+
+  await fetchAllStudents(); // 🔥 ensure data exists
+  setEnrollPayload({
+    amountPaid: 0,
+    progressPercentage: 0,
+    student: { id: "" },
+  });
+  setShowEnrollModal(true);
+};
+
+
+const [notificationPayload, setNotificationPayload] = useState({
+  title: "",
+  message: "",
+  sendTo: "ALL",
+  role: "",
+});
+  
+
+useEffect(() => {
+  document.body.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+}, [theme]);
+const toggleTheme = () => {
+  setTheme(prev => (prev === "light" ? "dark" : "light"));
+};
+
+  
+  useEffect(() => {
+  fetchCourses();
+  fetchAllStudents();
+   fetchNotifications();
+   
+}, []);
+useEffect(() => {
+  if (showDiscussionModal) {
+    fetchAllStudents();
+  }
+}, [showDiscussionModal]);
+
+useEffect(() => {
+  if (selectedCourse?.id) {
+    fetchStudents(selectedCourse.id);
+  }
+}, [selectedCourse]);
+
+useEffect(() => {
+  if (selectedLessonId) {
+    fetchVideos(selectedLessonId);
+    fetchQuizzes(selectedLessonId); // ✅ Fetch quizzes for the selected lesson
+  }
+}, [selectedLessonId]);
+ useEffect(() => {
+  if (selectedCourse?.id) {
+    fetchDiscussions(selectedCourse.id);
+  }
+}, [selectedCourse]);
+
+useEffect(() => {
+  fetchAllVideos();
+}, []);
+const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.location.href = "/";
+};
+
+  // ---------------- FETCH COURSES ----------------
+  async function fetchCourses() {
+    try {
+      const res = await api.get("/auth/courses");
+      setCourses(res.data || []);
+      /*if (res.data && res.data.length) {
+        const first = res.data[0];
+        setSelectedCourse(first);
+        await fetchCourseDetails(first.id);
+        await fetchStudents(first.id);
+        await fetchDiscussions(first.id);
+        await fetchSubmissions(first.id);
+      }*/
+    } catch (err) {
+      console.error("Failed to fetch courses", err);
+      alert("Failed to fetch courses (see console)");
+    }
+  }
+
+  // ---------------- FETCH COURSE DETAILS ----------------
+  async function fetchCourseDetails(courseId) {
+    if (!courseId) return;
+    setLoading(true);
+    try {
+      const res = await api.get(`/instructor/course/${courseId}/modules`);
+      setCourseDetails((prev) => ({ ...prev, [courseId]: res.data || [] }));
+    } catch (err) {
+      console.warn("fetchCourseDetails error", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+ /*async function fetchAllStudents() {
+  try {
+    const res = await api.get("/instructor/students", enrollPayload, {
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+    "Content-Type": "application/json",
+  },
+});
+    setAllStudents(res.data || []);
+  } catch (err) {
+    console.error("Failed to fetch students", err);
+    setAllStudents([]);
+  }
+}*/
+
+// ---------------------- fetchAll student-------------
+async function fetchAllStudents() {
+  try {
+    // api already injects Authorization via interceptor, so just call GET with default config
+    const res = await api.get("/instructor/students");
+    setAllStudents(res.data || []);
+  } catch (err) {
+    console.error("Failed to fetch students", err);
+    setAllStudents([]);
+  }
+}
+
+// ---------------- FETCH ALL DISCUSSIONS ----------------
+async function fetchDiscussions(courseId) {
+  if (!courseId) return;
+
+  try {
+    const res = await api.get(
+      `/instructor/course/${courseId}/discussions`
+    );
+    setDiscussions(Array.isArray(res.data) ? res.data : []);
+  } catch (err) {
+    console.error("Fetch discussions failed", err);
+    setDiscussions([]);
+  }
+}
+
+ async function fetchCourseProgress(courseId) {
+  try {
+    const res = await api.get(`/instructor/course/${courseId}/progress`);
+    setCourseProgress(res.data || { progress: 0 });
+  } catch (err) {
+    console.error("Failed to fetch progress", err);
+    setCourseProgress({ progress: 0 });
+  }
+}
+
+
+  // ---------------- FETCH LESSONS ----------------
+  async function fetchLessons(moduleId) {
+    if (!moduleId) return;
+    try {
+      const res = await api.get(`/instructor/module/${moduleId}/lessons`);
+      setCourseDetails((prev) => {
+        const updated = { ...prev };
+        const module = updated[selectedCourse.id]?.find((m) => String(m.id) === String(moduleId));
+        if (module) module.lessons = res.data || [];
+        return updated;
+      });
+    } catch (err) {
+      console.warn("fetchLessons error", err);
+    }
+  }
+
+  // ---------------- FETCH VIDEOS ----------------
+  async function fetchVideos(lessonId) {
+  if (!lessonId) {
+    setVideos([]);
+    return;
+  }
+
+  try {
+    const res = await api.get(`/instructor/lesson/${lessonId}/video`);
+    console.log("VIDEOS API RESPONSE:", res.data);
+
+    setVideos(Array.isArray(res.data) ? res.data : [res.data]);
+
+  } catch (err) {
+    console.error("Failed to fetch lesson videos", err);
+    setVideos([]);
+  }
+}
+async function fetchAllVideos() {
+  try {
+    const res = await api.get("/auth/videos");
+    setAllVideos(Array.isArray(res.data) ? res.data : []);
+  } catch (err) {
+    console.error("Failed to fetch all videos", err);
+    setAllVideos([]);
+  }
+}
+
+
+  // ---------------- FETCH QUIZZES ----------------
+  async function fetchQuizzes(lessonId) {
+    if (!lessonId) return;
+    try {
+      const res = await api.get(`/instructor/lesson/${lessonId}/quiz`);
+      setQuizzes(res.data || []);
+    } catch (err) {
+      console.warn("fetchQuizzes error", err);
+      setQuizzes([]);
+    }
+  }
+
+  // ---------------- FETCH STUDENTS ----------------
+  async function fetchStudents(courseId) {
+    if (!courseId) return;
+    try {
+      const res = await api.get(`/instructor/course/${courseId}/students`);
+      setStudentsList(res.data || []);
+    } catch (err) {
+      console.warn("fetchStudents error", err);
+      setStudentsList([]);
+    }
+  }
+
+  // ---------------- FETCH SUBMISSIONS ----------------
+  async function fetchSubmissions(courseId) {
+    if (!courseId) return;
+    try {
+      const res = await api.get(`/instructor/course/${courseId}/submissions`);
+      setSubmissions(res.data || []);
+    } catch (err) {
+      console.warn("fetchSubmissions error", err);
+      setSubmissions([]);
+    }
+  }
+
+  // ---------------- FETCH DISCUSSIONS ----------------
+  async function fetchDiscussions(courseId) {
+    if (!courseId) return;
+    try {
+      const res = await api.get(`/instructor/course/${courseId}/discussions`);
+      setDiscussions(res.data || []);
+    } catch (err) {
+      console.warn("fetchDiscussions error", err);
+      setDiscussions([]);
+    }
+  }
+
+  // ---------------- CREATE COURSE ----------------
+  
+const handleCreateCourse = async (e) => {
+  e.preventDefault();
+
+  // Validation
+  if (!courseData.title || !courseData.description || !courseData.price || !courseData.categoryId || !courseData.level) {
+    return alert("Please fill all fields");
+  }
+
+  setLoading(true);
+  try {
+    await api.post("/admin/courses", newCourse); // or /instructor/courses depending on your backend
+    alert("Course created successfully!");
+    setShowCreateCourseModal(false);
+    setCourseData({ title: "", description: "", price: 0, categoryId: "", level: "BEGINNER" });
+    await fetchCourses(); // refresh course list
+  } catch (err) {
+    console.error(err);
+    alert("Failed to create course");
+  } finally {
+    setLoading(false);
+  }
+};
+
+  
+   //------------- fetch notification
+  async function fetchNotifications() {
+  try {
+    const res = await api.get("/admin/notifications");
+    setNotifications(res.data || []);
+  } catch (err) {
+    console.error("Failed to fetch notifications", err);
+    setNotifications([]);
+  }
+}
+
+
+  // ---------------- CREATE MODULE ----------------
+  async function handleCreateModule(e) {
+    e.preventDefault();
+    if (!selectedCourse) return alert("Select a course first");
+    try {
+      await api.post(`/instructor/course/${selectedCourse.id}/module`, modulePayload);
+      setShowModuleModal(false);
+      setModulePayload({ title: "", description: "" });
+      await fetchCourseDetails(selectedCourse.id);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create module");
+    }
+  }
+  // When user selects a module
+const handleSelectModule = async (moduleId) => {
+  setSelectedModuleId(moduleId);
+  setSelectedLessonId(null);
+
+  // Fetch lessons for this module and update courseDetails
+  try {
+    const res = await api.get(`/instructor/module/${moduleId}/lessons`);
+    setCourseDetails((prev) => {
+      const updated = { ...prev };
+      const modules = updated[selectedCourse.id] || [];
+      const mod = modules.find((m) => String(m.id) === String(moduleId));
+      if (mod) mod.lessons = res.data || [];
+      return updated;
+    });
+  } catch (err) {
+    console.error("Failed to fetch lessons", err);
+  }
+};
+async function sendNotificationToAll() {
+  try {
+    await api.post("/admin/notifications", {
+      title: notificationPayload.title,
+      message: notificationPayload.message,
+      sendTo: "ALL",
+    });
+
+    alert("Notification sent to ALL users");
+    setShowNotificationModal(false);
+    setNotificationPayload({ title: "", message: "", sendTo: "ALL", role: "" });
+    fetchNotifications();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to send notification");
+  }
+}
+async function sendNotificationToRole() {
+  if (!notificationPayload.role) {
+    return alert("Select role");
+  }
+
+  try {
+    await api.post("/admin/role", {
+      title: notificationPayload.title,
+      message: notificationPayload.message,
+      role: notificationPayload.role,
+    });
+
+    alert("Notification sent to role");
+    setShowNotificationModal(false);
+    setNotificationPayload({ title: "", message: "", sendTo: "ALL", role: "" });
+    fetchNotifications();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to send notification");
+  }
+}
+
+
+
+  // ---------------- CREATE LESSON ----------------
+  async function handleCreateLesson(e) {
+    e.preventDefault();
+    if (!selectedModuleId) return alert("Select a module first");
+    try {
+      await api.post(`/instructor/module/${selectedModuleId}/lesson`, lessonPayload);
+      setShowLessonModal(false);
+      setLessonPayload({ title: "", content: "" });
+      await fetchLessons(selectedModuleId);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create lesson");
+    }
+  }
+  // ---------------- PUBLISH COURSE ----------------
+async function handlePublishCourse(courseId) {
+  if (!courseId) return;
+  try {
+    await api.put(`/instructor/course/${courseId}/publish`);
+    alert("Course published successfully!");
+    // Refresh courses or course details
+    fetchCourses();
+  } catch (err) {
+    console.error("Failed to publish course", err);
+    alert("Failed to publish course");
+  }
+}
+
+const publishCourse = async (courseId) => {
+  if (publishing[courseId]) return; // extra safety
+
+  setPublishing((p) => ({ ...p, [courseId]: true }));
+
+  try {
+    await api.put(`/instructor/course/${courseId}/publish`);
+    await fetchCourses(); // refresh list
+  } catch (err) {
+    console.error("Failed to publish course", err);
+    alert("You are not authorized or course already published");
+  } finally {
+    setPublishing((p) => ({ ...p, [courseId]: false }));
+  }
+};
+
+  // ---------------- ADD VIDEO ----------------
+  async function handleAddVideo(e) {
+  e.preventDefault();
+  if (!selectedLessonId) return alert("Select a lesson first");
+  if (!videoPayload.file) return alert("Select a video file");
+
+  try {
+    const formData = new FormData();
+    formData.append("file", videoPayload.file);
+    formData.append("title", videoPayload.title);
+    formData.append("duration", videoPayload.duration || 0);
+
+    await api.post(
+      `/instructor/lesson/${selectedLessonId}/video`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+
+    setShowVideoModal(false);
+    setVideoPayload({ title: "", videoUrl: "", duration: 0, file: null });
+    await fetchVideos(selectedLessonId);
+    alert("Video uploaded successfully!");
+  } catch (err) {
+    console.error("Video upload failed", err);
+    alert("Failed to add video. Check console for details.");
+  }
+}
+
+
+  // ---------------- ADD QUIZ ----------------
+  async function handleAddQuiz(e) {
+    e.preventDefault();
+    if (!selectedLessonId) return alert("Select a lesson first");
+    try {
+      await api.post(`/instructor/lesson/${selectedLessonId}/quiz`, quizPayload);
+      setShowQuizModal(false);
+      setQuizPayload({ question: "", optionA: "", optionB: "", optionC: "", optionD: "", correctAnswer: "A" });
+      await fetchQuizzes(selectedLessonId);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add quiz");
+    }
+  } 
+
+  // ---------------enroll student------
+ async function handleEnrollStudent(e) {
+  e.preventDefault();
+
+  if (!selectedCourse?.id) {
+    alert("No course selected");
+    return;
+  }
+
+  if (!enrollPayload.student.id) {
+    alert("Please select a student");
+    return;
+  }
+
+  try {
+    await api.post(
+      `/instructor/course/${selectedCourse.id}/enroll`,
+      {
+        amountPaid: enrollPayload.amountPaid,
+        progressPercentage: enrollPayload.progressPercentage,
+        student: { id: enrollPayload.student.id },
+      }
+    );
+
+    alert("✅ Student enrolled successfully");
+
+    setShowEnrollModal(false);
+    setEnrollPayload({
+      amountPaid: 0,
+      progressPercentage: 0,
+      student: { id: "" },
+    });
+
+    await fetchStudents(selectedCourse.id); // 🔄 refresh list
+  } catch (err) {
+    console.error("Enroll error:", err);
+    alert(err?.response?.data?.message || "Failed to enroll student");
+  }
+}
+
+
+
+  // ---------------- ADD ASSIGNMENT ----------------
+  async function handleAddAssignment(e) {
+    e.preventDefault();
+    if (!selectedLessonId) return alert("Select a lesson first");
+    try {
+      const res = await api.post(`/instructor/lesson/${selectedLessonId}/assignment`, assignmentPayload);
+      setShowAssignmentModal(false);
+      setAssignmentPayload({ id: res.data.id, title: "", description: "", dueDate: "" });
+      await fetchLessons(selectedModuleId);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add assignment");
+    }
+  }
+
+  // ---------------- SUBMIT ASSIGNMENT ----------------
+  async function handleSubmitAssignment(e) {
+    e.preventDefault();
+    if (!assignmentFile || !assignmentPayload.id) return alert("Select assignment and file");
+    try {
+      const formData = new FormData();
+      formData.append("file", assignmentFile);
+      formData.append("studentId", enrollPayload.student.id);
+      formData.append("assignmentId", assignmentPayload.id);
+
+      await api.post(`/instructor/assignment/submit`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setShowSubmitAssignmentModal(false);
+      setAssignmentFile(null);
+      alert("Assignment submitted");
+      fetchSubmissions(selectedCourse.id);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit assignment");
+    }
+  }
+
+  // ---------------- GRADE SUBMISSION ----------------
+  async function handleGradeSubmission(submissionId) {
+    const grade = prompt("Enter grade (0-100)");
+    if (grade === null) return;
+    try {
+      await api.put(`/instructor/submission/${submissionId}/grade?grade=${grade}`);
+      alert("Graded successfully");
+      fetchSubmissions(selectedCourse.id);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to grade submission");
+    }
+  }
+
+  
+  
+
+  // ---------------- CREATE DISCUSSION ----------------
+async function handleCreateDiscussion(e) {
+  e.preventDefault();
+
+  try {
+    await fetchAllStudents();
+    const payload = {
+      question: discussionPayload.question,
+      course: { id: discussionPayload.courseId || selectedCourse?.id },
+      student: discussionPayload.studentId ? { id: discussionPayload.studentId } : null,
+    };
+    if (!payload.question || !payload.course.id) {
+      return alert("Please enter a question and select a course.");
+    }
+
+    await api.post(`/instructor/discussion/create`, payload);
+    setShowDiscussionModal(false);
+    setDiscussionPayload({ question: "", courseId: null, studentId: null });
+    if (selectedCourse?.id) await fetchDiscussions(selectedCourse.id);
+
+    alert("Discussion created.");
+  } catch (err) {
+    console.error("Failed to create discussion", err);
+    const msg = err?.response?.data?.message || "Failed to create discussion (see console)";
+    alert(msg);
+  }
+}
+
+  // ---------------- REPLY DISCUSSION ----------------
+  async function handleReplyDiscussion(e) {
+  e.preventDefault();
+
+  if (!replyPayload.message || !selectedDiscussionId) {
+    return alert("Reply message required");
+  }
+
+  try {
+    await api.post(
+      `/instructor/discussion/${selectedDiscussionId}/reply`,
+      { message: replyPayload.message }
+    );
+
+    setShowReplyModal(false);
+    setReplyPayload({ message: "", discussionId: null });
+
+    await fetchDiscussions(selectedCourse.id); // 🔁 refresh
+    alert("Reply posted successfully");
+  } catch (err) {
+    console.error("Reply failed", err);
+    alert("Failed to post reply");
+  }
+}
+
+
+  // ---------------- HELPER FUNCTIONS ----------------
+  const modulesForSelectedCourse = () => {
+    if (!selectedCourse || !courseDetails[selectedCourse.id]) return [];
+    return courseDetails[selectedCourse.id] || [];
+  };
+
+  const lessonsForModule = (moduleId) => {
+    const module = modulesForSelectedCourse().find((m) => String(m.id) === String(moduleId));
+    return module?.lessons || [];
+  };
+
+  // ---------- UI render ----------
+  return (
+    <div className="container-fluid dashboard-wrapper">
+      <div className="row">
+        <aside className="col-md-3 sidebar p-4">
+          <h4 className="mb-4">🎓 Instructor</h4>
+
+          <div className="mb-3">
+            <select
+              className="form-select"
+              value={selectedCourse?.id || ""}
+              onChange={async (e) => {
+                const id = e.target.value;
+                const course = courses.find((c) => String(c.id) === String(id));
+                setSelectedCourse(course || null);
+                await fetchCourseDetails(id);
+                 await fetchCourseProgress(id);  
+              }}
+            >
+              <option value="">Select course...</option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title} {c.status ? `(${c.status})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <ul className="nav flex-column mb-3">
+            {[
+              { k: "overview", label: "Overview" },
+              { k: "content", label: "Content" },
+              { k: "students", label: "Students" },
+              { k: "grading", label: "Grading" },
+              { k: "discussions", label: "Discussions" },
+               { k: "notifications", label: "Notifications" },
+
+              { k: "earnings", label: "Earnings" },
+            ].map((t) => (
+              <li key={t.k} className="nav-item">
+                <button
+                  onClick={() => setTab(t.k)}
+                  className={`nav-link text-start ${tab === t.k ? "active" : ""}`}
+                >
+                  {t.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <div className="d-grid gap-2">
+            <div className="d-grid gap-2 mt-4">
+ 
+</div>
+<button
+  className="btn btn-sm theme-toggle-btn mt-3"
+  onClick={toggleTheme}
+>
+  {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+</button>
+
+            <button className="btn btn-primary" onClick={() => setShowCreateCourseModal(true)}>
+              + Create Course
+            </button>
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => {
+                if (!selectedCourse) return alert("Select course first");
+                setShowModuleModal(true);
+              }}
+            >
+              + Add Module
+            </button>
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => {
+                if (!selectedCourse) return alert("Select course first");
+                setShowEnrollModal(true);
+              }}
+            >
+              Enroll Student
+            </button>
+          </div>
+        </aside>
+        
+
+        <main className="col-md-9 content-area p-4">
+          {/* ================= HEADER ================= */}
+<div className="dashboard-header d-flex justify-content-between align-items-center mb-4 p-3 shadow-sm rounded bg-white">
+
+  {/* Left */}
+  <h4 className="mb-0">📘 Instructor Dashboard</h4>
+
+  {/* Right Controls */}
+  <div className="d-flex align-items-center gap-3">
+
+    {/* 🌙 Theme Toggle */}
+    <button
+      className="btn btn-sm btn-outline-secondary"
+      onClick={toggleTheme}
+    >
+      {theme === "light" ? "🌙 Dark" : "☀️ Light"}
+    </button>
+
+    {/* 🔔 Notifications */}
+    <div className="position-relative">
+      <button
+        className="btn btn-outline-secondary position-relative"
+        onClick={() => setShowNotifDropdown(p => !p)}
+      >
+        🔔
+        {notifications.length > 0 && (
+          <span className="badge bg-danger position-absolute top-0 start-100 translate-middle">
+            {notifications.length}
+          </span>
+        )}
+      </button>
+
+      {showNotifDropdown && (
+        <div className="dropdown-menu show p-2 shadow"
+             style={{ right: 0, left: "auto", width: 280 }}>
+          <h6 className="dropdown-header">Notifications</h6>
+
+          {notifications.length === 0 ? (
+            <span className="dropdown-item-text text-muted">
+              No notifications
+            </span>
+          ) : (
+            notifications.slice(0, 5).map(n => (
+              <div key={n.id} className="dropdown-item small">
+                <b>{n.title}</b>
+                <div className="text-muted">{n.message}</div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+
+    {/* 👤 Instructor Profile */}
+    <div className="position-relative">
+      <button
+        className="btn btn-outline-primary rounded-circle"
+        onClick={() => setShowProfileDropdown(p => !p)}
+      >
+        👤
+      </button>
+
+      {showProfileDropdown && (
+  <div
+    className="dropdown-menu show shadow-lg p-3"
+    style={{ right: 0, left: "auto", width: 280 }}
+  >
+    {instructor ? (
+      <>
+        {/* Avatar */}
+        <div className="text-center mb-3">
+          <div className="profile-avatar mx-auto mb-2">
+            {instructor.name?.charAt(0)?.toUpperCase() || "I"}
+          </div>
+
+          <div className="fw-semibold">{instructor.name}</div>
+
+          <span className="badge bg-primary-subtle text-primary">
+            Instructor
+          </span>
+        </div>
+
+        <hr className="my-2" />
+
+        {/* Info */}
+        <div className="small">
+          <div className="mb-2">
+            <div className="text-muted">Email</div>
+            <div className="fw-semibold">{instructor.email}</div>
+          </div>
+
+          <div className="mb-2">
+            <div className="text-muted">Instructor ID</div>
+            <div className="fw-semibold">{instructor.id}</div>
+          </div>
+        </div>
+
+        <hr className="my-3" />
+
+        <button
+          className="btn btn-sm btn-outline-danger w-100"
+          onClick={handleLogout}
+        >
+          🚪 Logout
+        </button>
+      </>
+    ) : (
+      <div className="text-center text-muted">
+        <p>User not loaded</p>
+        <button
+          className="btn btn-sm btn-outline-primary"
+          onClick={() => window.location.href = "/login"}
+        >
+          Login again
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
+    </div>
+
+  </div>
+</div>
+{/* ================= END HEADER ================= */}
+
+       
+       {tab === "overview" && (
+  <>
+    <h3>Dashboard Overview</h3>
+
+    {/* Statistics */}
+    <div className="row my-3">
+      <div className="col-md-4">
+        <div className="card stat-card">
+          <div className="card-body">
+            <h6 className="card-title">Courses</h6>
+            <h3>{courses.length}</h3>
+          </div>
+        </div>
+      </div>
+      <div className="col-md-4">
+        <div className="card stat-card">
+          <div className="card-body">
+            <h6 className="card-title">Students</h6>
+            <h3>{studentsList.length}</h3>
+          </div>
+        </div>
+      </div>
+      <div className="col-md-4">
+        <div className="card stat-card">
+          <div className="card-body">
+            <h6 className="card-title">Earnings</h6>
+            <h3>0</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Course Progress */}
+    <h5 className="mt-4">📊 Course Progress</h5>
+    {selectedCourse ? (
+      courseProgress ? (
+        <div className="progress-chart-container mb-4">
+          <Pie
+            data={{
+              labels: ["Completed", "Remaining"],
+              datasets: [
+                {
+                  data: [courseProgress.progress, 100 - courseProgress.progress],
+                  backgroundColor: ["#4caf50", "#d9534f"],
+                  borderWidth: 1,
+                },
+              ],
+            }}
+            height={120}
+          />
+          <h6 className="text-center mt-2">
+            {selectedCourse.title} – {courseProgress.progress}%
+          </h6>
+        </div>
+      ) : (
+        <p>Loading progress...</p>
+      )
+    ) : (
+      <p className="text-muted">Select a course to view progress</p>
+    )}
+
+    {/* Courses List */}
+    <div className="container my-4">
+  <h2 className="mb-4">Your Courses</h2>
+
+  {loading ? (
+    <div className="text-center py-5">
+      <Spinner animation="border" />
+    </div>
+  ) : courses.length === 0 ? (
+    <p className="text-muted">No courses found.</p>
+  ) : (
+   <Row className="g-4">
+  {courses.map((course) => (
+    <Col xs={12} md={6} lg={4} key={course.id}>
+      <Card className="course-card h-100 shadow-sm border-0">
+        <Card.Body className="d-flex flex-column">
+
+          {/* HEADER */}
+          <div className="d-flex justify-content-between align-items-start mb-2">
+           <h5 className="course-title">
+              {course.title}
+
+
+            </h5>
+
+            <span
+              className={`badge ${
+                course.published ? "bg-success" : "bg-warning text-dark"
+              }`}
+            >
+              {course.published ? "Published" : "Draft"}
+            </span>
+          </div>
+
+          {/* DESCRIPTION */}
+          <p className="text-muted small mb-3 course-desc">
+            {course.description || "No description provided"}
+          </p>
+
+          {/* INFO */}
+          <div className="mb-3 small">
+            <div className="d-flex justify-content-between">
+              <span>💰 Price</span>
+              <strong>₹{course.price || 0}</strong>
+            </div>
+
+            <div className="d-flex justify-content-between">
+              <span>📂 Category</span>
+              <strong>{course.categoryName || "N/A"}</strong>
+            </div>
+
+            <div className="d-flex justify-content-between">
+              <span>🎯 Level</span>
+              <strong>{course.level || "BEGINNER"}</strong>
+            </div>
+          </div>
+
+          {/* ACTION */}
+          <Button
+            className="mt-auto w-100"
+            variant={course.published ? "success" : "primary"}
+            disabled={course.published || publishing[course.id]}
+            onClick={() => publishCourse(course.id)}
+          >
+            {course.published
+              ? "✅ Course Published"
+              : publishing[course.id]
+              ? "Publishing..."
+              : "🚀 Publish Course"}
+          </Button>
+
+        </Card.Body>
+      </Card>
+    </Col>
+  ))}
+</Row>
+
+  )}
+</div>
+
+  </>
+)}
+
+
+       
+         
+          {tab === "content" && (
+  <>
+    <h4 className="mb-4">📚 Content Editor</h4>
+    {!selectedCourse && <div className="text-muted">Select a course from the sidebar</div>}
+    {selectedCourse && (
+      <>
+        {/* Action Buttons */}
+        <div className="d-flex flex-wrap gap-3 mb-4">
+          <button className="btn btn-outline-primary fw-bold px-3 py-2" onClick={() => setShowModuleModal(true)}>
+            ➕ Add Module
+          </button>
+          <button
+            className="btn btn-outline-success fw-bold px-3 py-2"
+            onClick={() => {
+              if (!selectedModuleId) return alert("Select a module first");
+              setShowLessonModal(true);
+            }}
+          >
+            ➕ Add Lesson
+          </button>
+          <button
+            className="btn btn-outline-info fw-bold px-3 py-2"
+            onClick={() => {
+              if (!selectedLessonId) return alert("Select a lesson first");
+              setShowVideoModal(true);
+            }}
+          >
+            🎬 Add Video
+          </button>
+          <button
+            className="btn btn-outline-warning fw-bold px-3 py-2"
+            onClick={() => {
+              if (!selectedLessonId) return alert("Select a lesson first");
+              setShowQuizModal(true);
+            }}
+            
+            
+          >
+            📝 Add Quiz
+          </button>
+          <button
+            className="btn btn-outline-secondary fw-bold px-3 py-2"
+            onClick={() => {
+              if (!selectedLessonId) return alert("Select a lesson first");
+              setShowAssignmentModal(true);
+            }}
+          >
+            
+            
+            📎 Add Assignment
+          </button>
+        </div>
+
+        <div className="row g-4">
+         {/* Modules List */}
+<div className="col-md-4">
+  <h6 className="mb-3">Modules</h6>
+  <div className="list-group module-list shadow-sm">
+    {modulesForSelectedCourse().length === 0 && (
+      <div className="list-group-item text-muted">No modules yet</div>
+    )}
+    {modulesForSelectedCourse().map((m) => (
+      <div
+        key={m.id}
+        className={`list-group-item d-flex justify-content-between align-items-center module-card ${
+          selectedModuleId === String(m.id) ? "active" : ""
+        }`}
+        onClick={() => handleSelectModule(m.id)} // ✅ fetch lessons here
+      >
+        <div>
+          <div className="fw-semibold">{m.title}</div>
+          <small className="text-muted">{m.description}</small>
+        </div>
+        <span className="badge bg-light text-dark">{(m.lessons || []).length} lessons</span>
+      </div>
+    ))}
+  </div>
+</div>
+
+
+          {/* Lessons List */}
+          <div className="col-md-8">
+            <h6 className="mb-3">Lessons</h6>
+            <div className="list-group lesson-list shadow-sm">
+              {selectedModuleId ? (
+                lessonsForModule(selectedModuleId).length === 0 ? (
+                  <div className="list-group-item text-muted">No lessons in this module</div>
+                ) : (
+                  lessonsForModule(selectedModuleId).map((l) => (
+                    <div
+  key={l.id}
+  className={`lesson-card ${
+    selectedLessonId === l.id ? "active" : ""
+  }`}
+  onClick={() => {
+    setSelectedLessonId(l.id);
+    setVideos([]);
+    setQuizzes([]);
+  }}
+>
+
+                      <div>
+                        <div className="fw-semibold">{l.title}</div>
+                        <small className="text-muted text-truncate">{l.content}</small>
+                      </div>
+                      <div className="text-end">
+                        <span className="text-muted small">
+                          🎬 {selectedLessonId === l.id ? videos.length : 0}
+ | 📝 {(l.quizzes || []).length} | 📎 {(l.assignments || []).length}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )
+              ) : (
+                <div className="list-group-item text-muted">Select a module to see lessons</div>
+              )}
+{selectedLessonId && (
+  <div className="mt-4">
+    <h6>🎬 Videos for this Lesson</h6>
+
+    {videos.length === 0 ? (
+      <p className="text-muted">No videos uploaded yet</p>
+    ) : (
+      <div className="row g-3">
+        {videos.map((v) => (
+          <div key={v.id} className="col-md-6">
+            <div className="card shadow-sm h-100">
+              <video
+                  src={`http://localhost:8080${v.videoUrl}`}
+                  controls
+                  className="w-100 rounded-top"
+                style={{ maxHeight: "200px", objectFit: "cover" }}
+              />
+              <div className="card-body">
+                <h6 className="fw-semibold mb-1">{v.title}</h6>
+                <small className="text-muted">
+                  ⏱ Duration: {v.duration || 0} sec
+                </small>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
+
+              <div className="mt-4">
+  <h6>📝 Quizzes for this Lesson</h6>
+  {quizzes.length === 0 ? (
+    <p className="text-muted">No quizzes added yet</p>
+  ) : (
+    <ul className="list-group">
+      {quizzes.map((q, index) => (
+        <li key={q.id} className="list-group-item">
+          <div className="fw-semibold">{index + 1}. {q.question}</div>
+          <div>
+            <small>A: {q.optionA}</small><br/>
+            <small>B: {q.optionB}</small><br/>
+            <small>C: {q.optionC}</small><br/>
+            <small>D: {q.optionD}</small>
+          </div>
+          <div className="text-success mt-1">
+            Correct Answer: {q.correctAnswer}
+          </div>
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
+
+            </div>
+          </div>
+        </div>
+      </>
+    )}
+  </>
+)}
+
+
+         
+          {tab === "students" && (
+            <>
+              <h4>Enrolled Students</h4>
+              {!selectedCourse && <div className="text-muted">Select a course</div>}
+              {selectedCourse && (
+                <>
+                  <div className="mb-2">
+                    <button className="btn btn-outline-secondary me-2" onClick={() => fetchStudents(selectedCourse.id)}>
+                      Refresh
+                    </button>
+                   <button
+  className="btn btn-outline-secondary"
+  onClick={openEnrollModal}
+>
+  Enroll Student
+</button>
+
+                  </div>
+
+                  <ul className="list-group">
+                    {studentsList.length === 0 && <li className="list-group-item text-muted">No enrolled students</li>}
+                    {studentsList.map((s, index) => (
+  <li key={`${s.id}-${index}`} className="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                          <div className="fw-semibold">{s.name}</div>
+                          <small className="text-muted">{s.email}</small>
+                        </div>
+                        <div className="text-end">
+                          <div>{s.progress ?? 0}%</div>
+                          <small className="text-muted">Enrolled: {s.enrolledAt || "—"}</small>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </>
+          )}
+
+         
+          {tab === "grading" && (
+            <>
+              <h4>Grade Submissions</h4>
+              {!selectedCourse && <div className="text-muted">Select a course</div>}
+              {selectedCourse && (
+                <>
+                  <button className="btn btn-outline-secondary mb-2" onClick={() => fetchSubmissions(selectedCourse.id)}>
+                    Refresh Submissions
+                  </button>
+                  {submissions.length === 0 && <div className="text-muted">No submissions</div>}
+                  <div className="list-group">
+                    {submissions.map((s) => (
+                      <div key={s.id} className="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                          <div className="fw-semibold">Submission by {s.studentId}</div>
+                          <small className="text-muted">Assignment: {s.assignmentId}</small>
+                        </div>
+                        <div>
+                          <div className="mb-2">Marks: {s.marks ?? "—"}</div>
+                          <button
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={async () => {
+                              const marksStr = prompt("Enter marks (0-100)");
+                              if (marksStr === null) return;
+                              const marks = Number(marksStr);
+                              const feedback = prompt("Feedback (optional)");
+                              try {
+                                await api.put(`/instructor/submissions/${s.id}/grade`, { marks, feedback });
+                                alert("Graded");
+                                fetchSubmissions(selectedCourse.id);
+                              } catch (err) {
+                                console.error(err);
+                                alert("Failed to grade");
+                              }
+                            }}
+                          >
+                            Grade
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          
+          {tab === "discussions" && (
+  <>
+    <div className="d-flex justify-content-between align-items-center mb-3">
+      <h4>💬 Discussions</h4>
+
+      <button
+        className="btn btn-primary"
+        onClick={() => {
+          setDiscussionPayload({
+            question: "",
+            courseId: selectedCourse?.id || null,
+            studentId: null,
+          });
+          setShowDiscussionModal(true);
+        }}
+      >
+        + Create Discussion
+      </button>
+    </div>
+
+    {discussions.length === 0 ? (
+      <div className="text-muted">No discussions available</div>
+    ) : (
+      <ul className="list-group">
+        {discussions.map((d) => (
+          <li key={d.id} className="list-group-item">
+            <div className="fw-semibold">{d.question}</div>
+
+            <small className="text-muted">
+              Course: {d.course?.title || "N/A"}
+              {d.student && ` • Student ID: ${d.student.id}`}
+            </small>
+          </li>
+        ))}
+      </ul>
+    )}
+    {discussions.length === 0 ? (
+      <p className="text-muted">No discussions</p>
+    ) : (
+      discussions.map(d => (
+        <div key={d.id} className="card mb-3 p-3">
+          <div className="fw-semibold">
+            👤 {d.student?.name || "Student"}
+          </div>
+
+          <p>{d.question}</p>
+
+          {/* Replies */}
+          {d.replies?.map((r, index) => (
+  <div key={`${d.id}-reply-${r.id}-${index}`} className="reply-box">
+
+              <b>Instructor:</b> {r.message}
+            </div>
+          ))}
+
+          {/* Reply Button */}
+          <button
+            className="btn btn-sm btn-outline-primary mt-2"
+            onClick={() => {
+              setSelectedDiscussionId(d.id);
+              setReplyPayload({ message: "", discussionId: d.id });
+              setShowReplyModal(true);
+            }}
+          >
+            Reply
+          </button>
+        </div>
+      ))
+    )}
+  </>
+)}
+
+      {tab === "notifications" && (
+  <>
+    <h4>📢 Notifications</h4>
+
+    <button
+      className="btn btn-primary mb-3"
+      onClick={() => setShowNotificationModal(true)}
+    >
+      + Send Notification
+    </button>
+
+    <ul className="list-group">
+      {notifications.length === 0 && (
+        <li className="list-group-item text-muted">No notifications</li>
+      )}
+
+      {notifications.map((n, index) => (
+  <li key={`notif-${n.id}-${index}`} className="list-group-item">
+
+          <div className="fw-semibold">{n.title}</div>
+          <div>{n.message}</div>
+          <small className="text-muted">
+            Target: {n.sendTo || n.role}
+          </small>
+        </li>
+      ))}
+    </ul>
+  </>
+)}
+
+
+          
+          {tab === "earnings" && (
+            <>
+              <h4>Earnings</h4>
+              <div className="text-muted">Earnings & payout data should come from backend endpoints (not part of the provided list).</div>
+            </>
+          )}
+        </main>
+      </div>
+
+     
+
+      
+    {showCreateCourseModal && (
+  <ModalWrap onClose={() => setShowCreateCourseModal(false)}>
+    <h5>Create Course</h5>
+    <form onSubmit={handleCreateCourse}>
+
+      <input
+        className="form-control mb-2"
+        placeholder="Title"
+        value={courseData.title}
+        onChange={(e) => setCourseData({ ...courseData, title: e.target.value })}
+        required
+      />
+
+      <textarea
+        className="form-control mb-2"
+        placeholder="Description"
+        value={courseData.description}
+        onChange={(e) => setCourseData({ ...courseData, description: e.target.value })}
+        required
+      />
+
+      <input
+        type="number"
+        className="form-control mb-2"
+        placeholder="Price"
+        value={courseData.price}
+        onChange={(e) => setCourseData({ ...courseData, price: Number(e.target.value) })}
+        required
+      />
+
+      {/* Category Dropdown */}
+      <select
+        className="form-control mb-2"
+        value={courseData.categoryId}
+        onChange={(e) => setCourseData({ ...courseData, categoryId: parseInt(e.target.value) })}
+        required
+      >
+        <option value="">Select Category</option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+
+      {/* Level Dropdown */}
+      <select
+        className="form-control mb-3"
+        value={courseData.level}
+        onChange={(e) => setCourseData({ ...courseData, level: e.target.value })}
+      >
+        <option>BEGINNER</option>
+        <option>INTERMEDIATE</option>
+        <option>ADVANCED</option>
+      </select>
+
+      <div className="text-end">
+        <button type="button" className="btn btn-secondary me-2" onClick={() => setShowCreateCourseModal(false)}>Cancel</button>
+        <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? "Creating..." : "Create"}</button>
+      </div>
+    </form>
+  </ModalWrap>
+)}
+
+
+      
+      {showModuleModal && (
+        <ModalWrap onClose={() => setShowModuleModal(false)}>
+          <h5>Add Module</h5>
+          <form onSubmit={handleCreateModule}>
+            <input className="form-control mb-2" placeholder="Title" required value={modulePayload.title}
+              onChange={(e) => setModulePayload((s) => ({ ...s, title: e.target.value }))} />
+            <textarea className="form-control mb-2" placeholder="Description" value={modulePayload.description}
+              onChange={(e) => setModulePayload((s) => ({ ...s, description: e.target.value }))} />
+            <div className="text-end">
+              <button type="button" className="btn btn-secondary me-2" onClick={() => setShowModuleModal(false)}>Cancel</button>
+              <button className="btn btn-primary">Create Module</button>
+            </div>
+          </form>
+        </ModalWrap>
+      )}
+     
+
+   
+      {showLessonModal && (
+        <ModalWrap onClose={() => setShowLessonModal(false)}>
+          <h5>Add Lesson (module selected)</h5>
+          <div className="mb-2">Module: <strong>{modulesForSelectedCourse().find(m=>String(m.id)===String(selectedModuleId))?.title || "—"}</strong></div>
+          <form onSubmit={handleCreateLesson}>
+            <input className="form-control mb-2" placeholder="Title" required value={lessonPayload.title}
+              onChange={(e) => setLessonPayload((s) => ({ ...s, title: e.target.value }))} />
+            <textarea className="form-control mb-2" placeholder="Content" value={lessonPayload.content}
+              onChange={(e) => setLessonPayload((s) => ({ ...s, content: e.target.value }))} />
+            <div className="text-end">
+              <button type="button" className="btn btn-secondary me-2" onClick={() => setShowLessonModal(false)}>Cancel</button>
+              <button className="btn btn-primary">Create Lesson</button>
+            </div>
+          </form>
+        </ModalWrap>
+      )}
+
+      
+      {showVideoModal && (
+  <ModalWrap onClose={() => setShowVideoModal(false)}>
+    <h5>Add Video (lesson selected)</h5>
+    <div className="mb-2">Lesson: <strong>{selectedLessonId || "—"}</strong></div>
+
+    <form onSubmit={handleAddVideo} className="d-flex flex-column gap-3">
+      {/* Video Title */}
+      <input
+        className="form-control"
+        placeholder="Video Title"
+        required
+        value={videoPayload.title}
+        onChange={(e) => setVideoPayload((s) => ({ ...s, title: e.target.value }))}
+      />
+
+      {/* Drag & Drop / File Selector */}
+      <div
+        className="video-dropzone border border-dashed rounded p-3 text-center"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          const file = e.dataTransfer.files[0];
+          if (!file) return;
+          const url = URL.createObjectURL(file);
+          setVideoPayload((s) => ({ ...s, videoUrl: url, file }));
+        }}
+      >
+        {videoPayload.videoUrl ? (
+          <video
+            src={videoPayload.videoUrl}
+            controls
+            className="w-100 mb-2 rounded"
+            style={{ maxHeight: "200px" }}
+          />
+        ) : (
+          <p className="text-muted">Drag & drop a video here or click below to select a file</p>
+        )}
+
+        <input
+          type="file"
+          accept="video/*"
+          className="form-control mt-2"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            setVideoPayload((s) => ({ ...s, videoUrl: url, file }));
+          }}
+        />
+      </div>
+
+      {/* Optional Video URL */}
+      <input
+        type="text"
+        className="form-control"
+        placeholder="Or paste a video URL"
+        value={videoPayload.videoUrl}
+        onChange={(e) =>
+          setVideoPayload((s) => ({ ...s, videoUrl: e.target.value, file: null }))
+        }
+      />
+
+      {/* Duration */}
+      <input
+        type="number"
+        className="form-control"
+        placeholder="Duration (seconds)"
+        value={videoPayload.duration}
+        onChange={(e) => setVideoPayload((s) => ({ ...s, duration: Number(e.target.value) }))}
+      />
+
+      {/* Action Buttons */}
+      <div className="text-end mt-2">
+        <button
+          type="button"
+          className="btn btn-secondary me-2"
+          onClick={() => setShowVideoModal(false)}
+        >
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary">
+          Add Video
+        </button>
+      </div>
+    </form>
+  </ModalWrap>
+)}
+
+
+      
+      {showQuizModal && (
+        <ModalWrap onClose={() => setShowQuizModal(false)}>
+          <h5>Add Quiz (lesson selected)</h5>
+          <form onSubmit={handleAddQuiz}>
+            <input className="form-control mb-2" placeholder="Question" required value={quizPayload.question}
+              onChange={(e) => setQuizPayload((s) => ({ ...s, question: e.target.value }))} />
+            <input className="form-control mb-2" placeholder="Option A" required value={quizPayload.optionA}
+              onChange={(e) => setQuizPayload((s) => ({ ...s, optionA: e.target.value }))} />
+            <input className="form-control mb-2" placeholder="Option B" required value={quizPayload.optionB}
+              onChange={(e) => setQuizPayload((s) => ({ ...s, optionB: e.target.value }))} />
+            <input className="form-control mb-2" placeholder="Option C" value={quizPayload.optionC}
+              onChange={(e) => setQuizPayload((s) => ({ ...s, optionC: e.target.value }))} />
+            <input className="form-control mb-2" placeholder="Option D" value={quizPayload.optionD}
+              onChange={(e) => setQuizPayload((s) => ({ ...s, optionD: e.target.value }))} />
+            <select className="form-select mb-2" value={quizPayload.correctAnswer}
+              onChange={(e) => setQuizPayload((s) => ({ ...s, correctAnswer: e.target.value }))}>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+            </select>
+            <div className="text-end">
+              <button type="button" className="btn btn-secondary me-2" onClick={() => setShowQuizModal(false)}>Cancel</button>
+              <button className="btn btn-primary">Add Quiz</button>
+            </div>
+          </form>
+        </ModalWrap>
+      )}
+
+      
+      {showAssignmentModal && (
+        <ModalWrap onClose={() => setShowAssignmentModal(false)}>
+          <h5>Add Assignment (lesson selected)</h5>
+          <form onSubmit={handleAddAssignment}>
+            <input className="form-control mb-2" placeholder="Title" required value={assignmentPayload.title}
+              onChange={(e) => setAssignmentPayload((s) => ({ ...s, title: e.target.value }))} />
+            <textarea className="form-control mb-2" placeholder="Description" required value={assignmentPayload.description}
+              onChange={(e) => setAssignmentPayload((s) => ({ ...s, description: e.target.value }))} />
+            <input type="date" className="form-control mb-2" value={assignmentPayload.dueDate}
+              onChange={(e) => setAssignmentPayload((s) => ({ ...s, dueDate: e.target.value }))} />
+            <div className="text-end">
+              <button type="button" className="btn btn-secondary me-2" onClick={() => setShowAssignmentModal(false)}>Cancel</button>
+              <button className="btn btn-primary">Add Assignment</button>
+            </div>
+          </form>
+        </ModalWrap>
+      )}
+
+      
+    {showEnrollModal && (
+  <ModalWrap onClose={() => setShowEnrollModal(false)}>
+    <h5 className="mb-3">🎓 Enroll Student</h5>
+
+    <form onSubmit={handleEnrollStudent}>
+      {/* Student */}
+      <label className="form-label fw-semibold">Student</label>
+      <select
+        className="form-select mb-3"
+        required
+        value={enrollPayload.student.id}
+        onChange={(e) =>
+          setEnrollPayload((s) => ({
+            ...s,
+            student: { id: Number(e.target.value) },
+          }))
+        }
+      >
+        <option value="">-- Select Student --</option>
+
+        {allStudents.length === 0 ? (
+          <option disabled>No students found</option>
+        ) : (
+          allStudents.map((stu) => (
+            <option key={stu.id} value={stu.id}>
+              {stu.name} ({stu.email})
+            </option>
+          ))
+        )}
+      </select>
+
+      {/* Amount Paid */}
+      <label className="form-label fw-semibold">Amount Paid (₹)</label>
+      <input
+        type="number"
+        className="form-control mb-3"
+        min="0"
+        required
+        value={enrollPayload.amountPaid}
+        onChange={(e) =>
+          setEnrollPayload((s) => ({
+            ...s,
+            amountPaid: Number(e.target.value),
+          }))
+        }
+      />
+
+      {/* Progress */}
+      <label className="form-label fw-semibold">Initial Progress (%)</label>
+      <input
+        type="number"
+        className="form-control mb-3"
+        min="0"
+        max="100"
+        value={enrollPayload.progressPercentage}
+        onChange={(e) =>
+          setEnrollPayload((s) => ({
+            ...s,
+            progressPercentage: Number(e.target.value),
+          }))
+        }
+      />
+
+      {/* Actions */}
+      <div className="text-end">
+        <button
+          type="button"
+          className="btn btn-secondary me-2"
+          onClick={() => setShowEnrollModal(false)}
+        >
+          Cancel
+        </button>
+
+        <button type="submit" className="btn btn-primary">
+          Enroll Student
+        </button>
+      </div>
+    </form>
+  </ModalWrap>
+)}
+
+      
+  {showDiscussionModal && (
+  <ModalWrap onClose={() => setShowDiscussionModal(false)}>
+    <h5>Create Discussion</h5>
+
+    <textarea
+      className="form-control mb-3"
+      rows={4}
+      placeholder="Enter discussion question"
+      value={discussionPayload.question}
+      onChange={(e) =>
+        setDiscussionPayload((s) => ({ ...s, question: e.target.value }))
+      }
+    />
+
+    {/* Optional: Select Course */}
+    {!selectedCourse && (
+      <select
+        className="form-select mb-3"
+        value={discussionPayload.courseId || ""}
+        onChange={(e) =>
+          setDiscussionPayload((s) => ({
+            ...s,
+            courseId: e.target.value,
+          }))
+        }
+      >
+        <option value="">Select Course</option>
+        {courses.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.title}
+          </option>
+        ))}
+      </select>
+    )}
+
+     {/* 🔍 SEARCH STUDENT */}
+    <input
+      className="form-control mb-2"
+      placeholder="Search student by name"
+      value={studentSearch}
+      onChange={(e) => setStudentSearch(e.target.value.toLowerCase())}
+    />
+
+    {/* 👤 SELECT STUDENT */}
+    <select
+      className="form-select mb-3"
+      value={discussionPayload.studentId || ""}
+      onChange={(e) =>
+        setDiscussionPayload((s) => ({
+          ...s,
+          studentId: e.target.value || null,
+        }))
+      }
+    >
+      <option value="">All Students</option>
+
+      {/* 👇 ADD IT EXACTLY HERE */}
+      {allStudents
+        .filter((s) =>
+          s.name.toLowerCase().includes(studentSearch)
+        )
+        .map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name} ({s.email})
+          </option>
+        ))}
+    </select>
+
+    <div className="text-end">
+      <button
+        className="btn btn-secondary me-2"
+        onClick={() => setShowDiscussionModal(false)}
+      >
+        Cancel
+      </button>
+
+      <button
+        className="btn btn-primary"
+        onClick={handleCreateDiscussion}
+      >
+        Post
+      </button>
+    </div>
+  </ModalWrap>
+)}
+
+
+   {showNotificationModal && (
+  <ModalWrap onClose={() => setShowNotificationModal(false)}>
+    <h5>Send Notification</h5>
+
+    <input
+      className="form-control mb-2"
+      placeholder="Title"
+      value={notificationPayload.title}
+      onChange={(e) =>
+        setNotificationPayload((s) => ({ ...s, title: e.target.value }))
+      }
+    />
+
+    <textarea
+      className="form-control mb-2"
+      placeholder="Message"
+      value={notificationPayload.message}
+      onChange={(e) =>
+        setNotificationPayload((s) => ({ ...s, message: e.target.value }))
+      }
+    />
+
+    <select
+      className="form-select mb-2"
+      value={notificationPayload.sendTo}
+      onChange={(e) =>
+        setNotificationPayload((s) => ({ ...s, sendTo: e.target.value }))
+      }
+    >
+      <option value="ALL">All Users</option>
+      <option value="ROLE">Specific Role</option>
+    </select>
+
+    {notificationPayload.sendTo === "ROLE" && (
+      <select
+        className="form-select mb-2"
+        value={notificationPayload.role}
+        onChange={(e) =>
+          setNotificationPayload((s) => ({ ...s, role: e.target.value }))
+        }
+      >
+        <option value="">Select Role</option>
+        <option value="STUDENT">Student</option>
+        <option value="INSTRUCTOR">Instructor</option>
+      </select>
+    )}
+
+    <div className="text-end">
+      <button
+        className="btn btn-secondary me-2"
+        onClick={() => setShowNotificationModal(false)}
+      >
+        Cancel
+      </button>
+
+      <button
+        className="btn btn-primary"
+        onClick={
+          notificationPayload.sendTo === "ALL"
+            ? sendNotificationToAll
+            : sendNotificationToRole
+        }
+      >
+        Send
+      </button>
+    </div>
+  </ModalWrap>
+)}
+
+
+
+      
+      {showReplyModal && (
+        <ModalWrap onClose={() => setShowReplyModal(false)}>
+          <h5>Reply to Discussion</h5>
+          <form onSubmit={handleReplyDiscussion}>
+            <input className="form-control mb-2" placeholder="Discussion ID" required value={selectedDiscussionId || ""}
+              onChange={(e) => setSelectedDiscussionId(e.target.value)} />
+            <textarea className="form-control mb-2" placeholder="Message" required value={replyPayload.message}
+              onChange={(e) => setReplyPayload((s) => ({ ...s, message: e.target.value }))} />
+            <div className="text-end">
+              <button type="button" className="btn btn-secondary me-2" onClick={() => setShowReplyModal(false)}>Cancel</button>
+              <button className="btn btn-primary">Reply</button>
+            </div>
+          </form>
+        </ModalWrap>
+      )}
+    </div>
+  );
+}
+
+// ------------------ Small helper components ------------------
+
+// Modal helper
+function ModalWrap({ children, onClose }) {
+  return (
+    <div className="modal-backdrop-custom">
+      <div className="modal-custom">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div />
+          <button className="btn-close" onClick={onClose} />
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function modulesForSelectedCourse_static(detail, selectedCourse) {
+  if (!selectedCourse || !detail) return [];
+  return detail?.modules || detail?.course?.modules || detail?.moduleList || [];
+}

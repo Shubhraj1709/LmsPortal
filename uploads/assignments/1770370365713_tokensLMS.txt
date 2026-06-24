@@ -1,0 +1,28 @@
+
+
+admin
+
+eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbkBsbXMuY29tIiwicm9sZXMiOiJST0xFX0lOU1RSVUNUT1IsRkFDVE9SX1BBU1NXT1JEIiwiaWF0IjoxNzY5NzUyNjk2LCJleHAiOjE3Njk4MzkwOTZ9.JvurcVMg1YUP7pqaGYXVWvaU3cfqj2Pbd46OFBwv4YQ5xUgVGS25yV5aXntNBypk86oeLgOtLbxTHC0XL8nK0w
+
+
+
+Instructor
+
+eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbkBsbXMuY29tIiwicm9sZXMiOiJST0xFX0lOU1RSVUNUT1IsRkFDVE9SX1BBU1NXT1JEIiwiaWF0IjoxNzcwMDk0NzM5LCJleHAiOjE3NzAxODExMzl9.Xni8Dvn21JNMVR_P0f2SXuoF7SqsKpez9kgq22fEb0VxXA5fXTm2sar62bFGEvNGE7fBpwjWkzMTSuM4Q7V8bg
+
+
+Student 
+
+eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJzaHViaHJhajdAZ21haWwuY29tIiwicm9sZXMiOiJST0xFX1NUVURFTlQsRkFDVE9SX1BBU1NXT1JEIiwiaWF0IjoxNzcwMDk0Nzc4LCJleHAiOjE3NzAxODExNzh9.v81_YNT4xz85LFYmoHCMmxE_rI7i5Nvaup_UQeslfTx-OJhtERVuxcSztL7cfekP_5tI0z2nZTsYYpKJZskbJg
+
+
+
+Successful payment (most used)
+
+Card number: 4242 4242 4242 4242
+
+Expiry: Any future date (e.g., 12/34)
+
+CVC: Any 3 digits (e.g., 123)
+
+ZIP: Any (e.g., 411001)
